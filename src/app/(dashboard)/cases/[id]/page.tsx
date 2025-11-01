@@ -29,12 +29,13 @@ import type { Hearing } from "@/lib/types";
 
 export default function CaseDetailPage({ params }: { params: { id: string } }) {
   const [isClient, setIsClient] = useState(false);
+  const id = params.id;
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const caseData = mockCases.find((c) => c.case_id === params.id);
+  const caseData = mockCases.find((c) => c.case_id === id);
 
   if (!caseData) {
     notFound();
