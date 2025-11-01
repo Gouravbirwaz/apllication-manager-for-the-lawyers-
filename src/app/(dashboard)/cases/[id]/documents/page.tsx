@@ -21,22 +21,29 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import type { Document, Case } from "@/lib/types";
 import { UploadDocumentDialog } from "@/components/documents/upload-document-dialog";
+import { Upload } from "lucide-react";
 
 export default function CaseDocumentsPage({ params }: { params: { id: string } }) {
+  const [caseId, setCaseId] = useState<string | null>(null);
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [caseDocs, setCaseDocs] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const caseId = params.id;
-    const foundCase = mockCases.find((c) => c.case_id === caseId);
-
-    if (foundCase) {
-      setCaseData(foundCase);
-      setCaseDocs(mockDocuments.filter((d) => d.case_id === caseId));
-    }
-    setIsLoading(false);
+    setCaseId(params.id);
   }, [params.id]);
+
+  useEffect(() => {
+    if (caseId) {
+      const foundCase = mockCases.find((c) => c.case_id === caseId);
+
+      if (foundCase) {
+        setCaseData(foundCase);
+        setCaseDocs(mockDocuments.filter((d) => d.case_id === caseId));
+      }
+      setIsLoading(false);
+    }
+  }, [caseId]);
 
 
   if (isLoading) {
@@ -63,7 +70,11 @@ export default function CaseDocumentsPage({ params }: { params: { id: string } }
         <UploadDocumentDialog 
           caseId={caseData.case_id} 
           onDocumentUploaded={handleDocumentUploaded} 
-        />
+        >
+          <Button size="sm">
+            <Upload className="mr-2 h-4 w-4" /> Upload Document
+          </Button>
+        </UploadDocumentDialog>
       </CardHeader>
       <CardContent>
         <Table>

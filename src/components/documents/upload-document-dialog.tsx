@@ -21,9 +21,10 @@ import { mockUsers } from '@/lib/mock-data';
 interface UploadDocumentDialogProps {
   caseId: string;
   onDocumentUploaded: (document: Document) => void;
+  children: React.ReactNode;
 }
 
-export function UploadDocumentDialog({ caseId, onDocumentUploaded }: UploadDocumentDialogProps) {
+export function UploadDocumentDialog({ caseId, onDocumentUploaded, children }: UploadDocumentDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -82,11 +83,9 @@ export function UploadDocumentDialog({ caseId, onDocumentUploaded }: UploadDocum
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Upload className="mr-2 h-4 w-4" /> Upload Document
-        </Button>
+        {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Upload New Document</DialogTitle>
           <DialogDescription>
