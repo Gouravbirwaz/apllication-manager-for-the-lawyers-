@@ -25,45 +25,44 @@ import { FileText, CalendarPlus, FolderOpen } from "lucide-react";
 import { DocumentSummary } from "@/components/document-summary";
 import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
-import type { Hearing } from "@/lib/types";
+import type { Hearing, Case, User, Document as CaseDocument, Task } from "@/lib/types";
 
 export default function CaseDetailPage({ params }: { params: { id: string } }) {
-  const [isClient, setIsClient] = useState(false);
-  const [caseId, setCaseId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setIsClient(true);
-    setCaseId(params.id);
-  }, [params.id]);
-
-  if (!isClient || !caseId) {
-    // You can render a skeleton loader here
-    return <div>Loading...</div>;
-  }
-
-  const caseData = mockCases.find((c) => c.case_id === caseId);
-
-  if (!caseData) {
-    notFound();
-  }
-  
-  const client = mockUsers.find((u) => u.uid === caseData.client_id);
-  const lawyer = mockUsers.find((u) => u.uid === caseData.lawyer_id);
-  const caseDocs = mockDocuments.filter((d) => d.case_id === caseData.case_id);
-  
-  // This state is now local to the component and managed on the client
+  const [caseData, setCaseData] = useState<Case | null>(null);
+  const [client, setClient] = useState<User | null>(null);
+  const [lawyer, setLawyer] = useState<User | null>(null);
+  const [caseDocs, setCaseDocs] = useState<CaseDocument[]>([]);
   const [caseHearings, setCaseHearings] = useState<Hearing[]>([]);
-  const [caseTasks, setCaseTasks] = useState(mockTasks.filter((t) => t.case_id === caseId));
+  const [caseTasks, setCaseTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-      // Initialize state that depends on finds/filters
+    const caseId = params.id;
+    const foundCase = mockCases.find((c) => c.case_id === caseId);
+
+    if (foundCase) {
+      setCaseData(foundCase);
+      setClient(mockUsers.find((u) => u.uid === foundCase.client_id) || null);
+      setLawyer(mockUsers.find((u) => u.uid === foundCase.lawyer_id) || null);
+      setCaseDocs(mockDocuments.filter((d) => d.case_id === caseId));
       setCaseHearings(mockHearings.filter((h) => h.case_id === caseId).sort((a,b) => b.date.getTime() - a.date.getTime()));
       setCaseTasks(mockTasks.filter((t) => t.case_id === caseId));
-  }, [caseId]);
+    }
+    setIsLoading(false);
+  }, [params.id]);
 
 
   const handleHearingScheduled = (newHearing: Hearing) => {
     setCaseHearings(prev => [...prev, newHearing].sort((a,b) => b.date.getTime() - a.date.getTime()));
+  }
+
+  if (isLoading) {
+    // You can render a skeleton loader here
+    return <div>Loading...</div>;
+  }
+
+  if (!caseData) {
+    notFound();
   }
 
   return (
@@ -202,6 +201,13 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                         </TableCell>
                       </TableRow>
                     )})}
+                     {caseTasks.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">
+                          No tasks found for this case.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>

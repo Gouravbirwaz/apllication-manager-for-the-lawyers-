@@ -19,29 +19,27 @@ import {
 import { mockCases, mockDocuments } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import type { Document } from "@/lib/types";
+import type { Document, Case } from "@/lib/types";
 import { UploadDocumentDialog } from "@/components/documents/upload-document-dialog";
 
 export default function CaseDocumentsPage({ params }: { params: { id: string } }) {
-  const [isClient, setIsClient] = useState(false);
-  const [caseId, setCaseId] = useState<string | null>(null);
-  
-  useEffect(() => {
-    setIsClient(true);
-    setCaseId(params.id);
-  }, [params.id]);
-
-  const caseData = mockCases.find((c) => c.case_id === caseId);
-
+  const [caseData, setCaseData] = useState<Case | null>(null);
   const [caseDocs, setCaseDocs] = useState<Document[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (caseId) {
+    const caseId = params.id;
+    const foundCase = mockCases.find((c) => c.case_id === caseId);
+
+    if (foundCase) {
+      setCaseData(foundCase);
       setCaseDocs(mockDocuments.filter((d) => d.case_id === caseId));
     }
-  }, [caseId]);
+    setIsLoading(false);
+  }, [params.id]);
 
-  if (!isClient) {
+
+  if (isLoading) {
     return <div>Loading...</div>; // Or a skeleton loader
   }
 
@@ -83,7 +81,7 @@ export default function CaseDocumentsPage({ params }: { params: { id: string } }
               <TableRow key={doc.doc_id}>
                 <TableCell className="font-medium">{doc.title}</TableCell>
                 <TableCell className="uppercase">{doc.file_type}</TableCell>
-                <TableCell>{isClient ? doc.uploaded_at.toLocaleDateString() : '...'}</TableCell>
+                <TableCell>{doc.uploaded_at.toLocaleDateString()}</TableCell>
                 <TableCell>{doc.version}</TableCell>
                 <TableCell className="text-right">
                     <Button variant="outline" size="sm">View</Button>
