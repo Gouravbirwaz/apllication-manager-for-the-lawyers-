@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockCases, mockDocuments, mockHearings, mockTasks, mockUsers } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FilePlus2, Upload, CalendarPlus, FolderOpen } from "lucide-react";
+import { FilePlus2, CalendarPlus, FolderOpen } from "lucide-react";
 import { DocumentSummary } from "@/components/document-summary";
 import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
@@ -66,49 +66,51 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
         </TabsList>
         
         <TabsContent value="overview">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-headline">Case Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><strong>Client:</strong> {client?.full_name}</div>
-                <div><strong>Lead Lawyer:</strong> {lawyer?.full_name}</div>
-                <div><strong>Court:</strong> {caseData.court_name}</div>
-                <div><strong>Filing Date:</strong> {isClient ? caseData.filing_date.toLocaleDateString() : '...'}</div>
-                <div>
-                  <strong>Status:</strong> <Badge variant={caseData.status === 'closed' ? 'outline' : 'default'} className="capitalize">{caseData.status}</Badge>
-                </div>
-                 <div>
-                  <strong>Type:</strong> <Badge variant="secondary" className="capitalize">{caseData.case_type}</Badge>
-                </div>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">Description</h4>
-                <p className="text-muted-foreground">{caseData.description}</p>
-              </div>
-               <div className="border-t pt-4">
-                <Link href={`/dashboard/cases/${caseData.case_id}/documents`}>
-                  <Button variant="outline">
-                    <FolderOpen className="mr-2 h-4 w-4"/> View Documents ({caseDocs.length})
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-           <Card className="mt-6">
+          <div className="space-y-6">
+            <Card>
               <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2">
-                  <FilePlus2 /> Intelligent Document Summary
-                </CardTitle>
-                <CardDescription>
-                  Paste text from a legal document to generate a concise summary using AI.
-                </CardDescription>
+                <CardTitle className="font-headline">Case Details</CardTitle>
               </CardHeader>
-              <CardContent>
-                <DocumentSummary initialSummary={caseDocs[0]?.summary} />
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div><strong>Client:</strong> {client?.full_name}</div>
+                  <div><strong>Lead Lawyer:</strong> {lawyer?.full_name}</div>
+                  <div><strong>Court:</strong> {caseData.court_name}</div>
+                  <div><strong>Filing Date:</strong> {isClient ? caseData.filing_date.toLocaleDateString() : '...'}</div>
+                  <div>
+                    <strong>Status:</strong> <Badge variant={caseData.status === 'closed' ? 'outline' : 'default'} className="capitalize">{caseData.status}</Badge>
+                  </div>
+                  <div>
+                    <strong>Type:</strong> <Badge variant="secondary" className="capitalize">{caseData.case_type}</Badge>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Description</h4>
+                  <p className="text-muted-foreground">{caseData.description}</p>
+                </div>
+                <div className="border-t pt-4">
+                  <Link href={`/dashboard/cases/${caseData.case_id}/documents`}>
+                    <Button variant="outline">
+                      <FolderOpen className="mr-2 h-4 w-4"/> View Documents ({caseDocs.length})
+                    </Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
+            <Card>
+                <CardHeader>
+                  <CardTitle className="font-headline flex items-center gap-2">
+                    <FilePlus2 /> Intelligent Document Summary
+                  </CardTitle>
+                  <CardDescription>
+                    Paste text from a legal document to generate a concise summary using AI.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DocumentSummary initialSummary={caseDocs[0]?.summary} />
+                </CardContent>
+              </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="hearings">
