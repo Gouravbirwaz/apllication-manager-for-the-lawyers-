@@ -38,17 +38,19 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     const caseId = params.id;
-    const foundCase = mockCases.find((c) => c.case_id === caseId);
+    if (caseId) {
+        const foundCase = mockCases.find((c) => c.case_id === caseId);
 
-    if (foundCase) {
-      setCaseData(foundCase);
-      setClient(mockUsers.find((u) => u.uid === foundCase.client_id) || null);
-      setLawyer(mockUsers.find((u) => u.uid === foundCase.lawyer_id) || null);
-      setCaseDocs(mockDocuments.filter((d) => d.case_id === caseId));
-      setCaseHearings(mockHearings.filter((h) => h.case_id === caseId).sort((a,b) => b.date.getTime() - a.date.getTime()));
-      setCaseTasks(mockTasks.filter((t) => t.case_id === caseId));
+        if (foundCase) {
+          setCaseData(foundCase);
+          setClient(mockUsers.find((u) => u.uid === foundCase.client_id) || null);
+          setLawyer(mockUsers.find((u) => u.uid === foundCase.lawyer_id) || null);
+          setCaseDocs(mockDocuments.filter((d) => d.case_id === caseId));
+          setCaseHearings(mockHearings.filter((h) => h.case_id === caseId).sort((a,b) => b.date.getTime() - a.date.getTime()));
+          setCaseTasks(mockTasks.filter((t) => t.case_id === caseId));
+        }
+        setIsLoading(false);
     }
-    setIsLoading(false);
   }, [params.id]);
 
 
