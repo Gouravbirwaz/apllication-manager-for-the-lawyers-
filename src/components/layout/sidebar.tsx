@@ -95,7 +95,7 @@ function AshokaChakraIcon(props: React.SVGProps<SVGSVGElement>) {
       <circle cx="12" cy="12" r="1.5"/>
       {Array.from({ length: 24 }).map((_, i) => (
         <line
-          key={i}
+          key={`spoke-${i}`}
           x1="12"
           y1="12"
           x2="12"
