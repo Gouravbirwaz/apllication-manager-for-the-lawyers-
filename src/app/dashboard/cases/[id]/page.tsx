@@ -220,3 +220,4 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
     </div>
   );
 }
+
