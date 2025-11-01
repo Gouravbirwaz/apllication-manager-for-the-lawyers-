@@ -20,14 +20,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockCases, mockDocuments, mockHearings, mockTasks, mockUsers } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FilePlus2, Upload, CalendarPlus } from "lucide-react";
-import { DocumentSummary } from "@/components/document-summary";
+import { FilePlus2, Upload, CalendarPlus, Wand2 } from "lucide-react";
+import { DocumentAnalysis } from "@/components/document-analysis";
 import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
-import type { Hearing } from "@/lib/types";
+import { UploadDocumentDialog } from "@/components/documents/upload-document-dialog";
+import type { Hearing, Document } from "@/lib/types";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { analyzeLegalDocumentAction } from "@/app/actions";
+import type { LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
 
 export default function CaseDetailPage({ params }: { params: { id: string } }) {
   const [isClient, setIsClient] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsClient(true);
@@ -41,13 +48,65 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
   
   const client = mockUsers.find((u) => u.uid === caseData.client_id);
   const lawyer = mockUsers.find((u) => u.uid === caseData.lawyer_id);
-  const caseDocs = mockDocuments.filter((d) => d.case_id === caseData.case_id);
+  
+  const initialCaseDocs = mockDocuments.filter((d) => d.case_id === caseData.case_id);
+  const [caseDocs, setCaseDocs] = useState<Document[]>(initialCaseDocs);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(initialCaseDocs[0]?.doc_id || null);
   
   const [caseHearings, setCaseHearings] = useState<Hearing[]>(mockHearings.filter((h) => h.case_id === caseData.case_id));
   const caseTasks = mockTasks.filter((t) => t.case_id === caseData.case_id);
 
+  const [analysis, setAnalysis] = useState<LegalDocumentAnalysisOutput | null>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+
   const handleHearingScheduled = (newHearing: Hearing) => {
     setCaseHearings(prev => [...prev, newHearing].sort((a,b) => b.date.getTime() - a.date.getTime()));
+  }
+
+  const handleDocumentUploaded = (newDocument: Document) => {
+    setCaseDocs(prev => [newDocument, ...prev]);
+  };
+
+  const handleAnalyzeDocument = async () => {
+    if (!selectedDocId) {
+       toast({
+        title: "No Document Selected",
+        description: "Please select a document from the list to analyze.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const documentToAnalyze = caseDocs.find(doc => doc.doc_id === selectedDocId);
+    if (!documentToAnalyze || !documentToAnalyze.summary) {
+       toast({
+        title: "Analysis Not Possible",
+        description: "The selected document has no content to analyze.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoadingAnalysis(true);
+    setAnalysis(null);
+
+    const result = await analyzeLegalDocumentAction({ documentText: documentToAnalyze.summary });
+    
+    setIsLoadingAnalysis(false);
+
+    if (result.error) {
+      toast({
+        title: "Error",
+        description: result.error,
+        variant: "destructive",
+      });
+    } else if (result.analysis) {
+      setAnalysis(result.analysis);
+       toast({
+        title: "Analysis Complete",
+        description: `Analysis for "${documentToAnalyze.title}" is ready.`,
+      });
+    }
   }
 
   return (
@@ -79,7 +138,7 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                 <div>
                   <strong>Status:</strong> <Badge variant={caseData.status === 'closed' ? 'outline' : 'default'} className="capitalize">{caseData.status}</Badge>
                 </div>
-                 <div>
+                  <div>
                   <strong>Type:</strong> <Badge variant="secondary" className="capitalize">{caseData.case_type}</Badge>
                 </div>
               </div>
@@ -95,30 +154,59 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
           <div className="space-y-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="font-headline">Documents</CardTitle>
-                <Button size="sm"><Upload className="mr-2 h-4 w-4"/> Upload Document</Button>
+                 <div>
+                    <CardTitle className="font-headline">Documents</CardTitle>
+                    <CardDescription>Select a document below to analyze it with AI.</CardDescription>
+                 </div>
+                
+                <UploadDocumentDialog 
+                  caseId={caseData.case_id} 
+                  onDocumentUploaded={handleDocumentUploaded}
+                >
+                  <Button size="sm">
+                    <Upload className="mr-2 h-4 w-4"/> Upload Document
+                  </Button>
+                </UploadDocumentDialog>
+
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Uploaded</TableHead>
-                      <TableHead>Version</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {caseDocs.map(doc => (
-                      <TableRow key={doc.doc_id}>
-                        <TableCell className="font-medium">{doc.title}</TableCell>
-                        <TableCell className="uppercase">{doc.file_type}</TableCell>
-                        <TableCell>{isClient ? doc.uploaded_at.toLocaleDateString() : '...'}</TableCell>
-                        <TableCell>{doc.version}</TableCell>
+                <RadioGroup value={selectedDocId || ''} onValueChange={setSelectedDocId}>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[50px]"></TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Uploaded</TableHead>
+                        <TableHead>Version</TableHead>
+                        <TableHead className="w-[250px]">Summary</TableHead> 
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {caseDocs.map(doc => (
+                        <TableRow key={doc.doc_id}>
+                          <TableCell>
+                            <RadioGroupItem value={doc.doc_id} id={doc.doc_id} />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                             <Label htmlFor={doc.doc_id} className="cursor-pointer">{doc.title}</Label>
+                          </TableCell>
+                          <TableCell className="uppercase">{doc.file_type}</TableCell>
+                          <TableCell>{isClient ? doc.uploaded_at.toLocaleDateString() : '...'}</TableCell>
+                          <TableCell>{doc.version}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm truncate max-w-xs">{doc.summary || 'N/A'}</TableCell>
+                        </TableRow>
+                      ))}
+                      {caseDocs.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                              No documents found for this case. Start by uploading one!
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </RadioGroup>
               </CardContent>
             </Card>
             
@@ -128,18 +216,22 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                   <FilePlus2 /> Intelligent Document Summary
                 </CardTitle>
                 <CardDescription>
-                  Paste text from a legal document to generate a concise summary using AI.
+                  Select a document from the table above, then click the button to generate a concise summary using AI.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <DocumentSummary initialSummary={caseDocs[0]?.summary} />
+              <CardContent className="space-y-4">
+                 <Button onClick={handleAnalyzeDocument} disabled={isLoadingAnalysis || !selectedDocId}>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    {isLoadingAnalysis ? "Analyzing..." : "Analyze Selected Document"}
+                 </Button>
+                <DocumentAnalysis isLoading={isLoadingAnalysis} analysis={analysis} />
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
         <TabsContent value="hearings">
-           <Card>
+            <Card>
               <CardHeader className="flex flex-row justify-between items-center">
                 <CardTitle className="font-headline">Scheduled Hearings</CardTitle>
                 <ScheduleHearing 
@@ -171,9 +263,9 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                         <TableCell>{hearing.remarks}</TableCell>
                       </TableRow>
                     ))}
-                     {caseHearings.length === 0 && (
+                      {caseHearings.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">
+                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                           No hearings scheduled.
                         </TableCell>
                       </TableRow>
@@ -212,6 +304,13 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                         </TableCell>
                       </TableRow>
                     )})}
+                    {caseTasks.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                            No tasks associated with this case.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
