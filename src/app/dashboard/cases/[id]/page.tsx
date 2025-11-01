@@ -1,3 +1,6 @@
+
+'use client';
+
 import { notFound } from "next/navigation";
 import {
   Card,
@@ -18,8 +21,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockCases, mockDocuments, mockHearings, mockTasks, mockUsers } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FilePlus2, Upload } from "lucide-react";
+import { FilePlus2, Upload, CalendarPlus } from "lucide-react";
 import { DocumentSummary } from "@/components/document-summary";
+import { useState } from "react";
+import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
+import type { Hearing } from "@/lib/types";
 
 export default function CaseDetailPage({ params }: { params: { id: string } }) {
   const caseData = mockCases.find((c) => c.case_id === params.id);
@@ -27,12 +33,20 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
   if (!caseData) {
     notFound();
   }
-
+  
   const client = mockUsers.find((u) => u.uid === caseData.client_id);
   const lawyer = mockUsers.find((u) => u.uid === caseData.lawyer_id);
   const caseDocs = mockDocuments.filter((d) => d.case_id === caseData.case_id);
-  const caseHearings = mockHearings.filter((h) => h.case_id === caseData.case_id);
+  
+  const [caseHearings, setCaseHearings] = useState<Hearing[]>(mockHearings.filter((h) => h.case_id === caseData.case_id));
   const caseTasks = mockTasks.filter((t) => t.case_id === caseData.case_id);
+
+  const [isScheduling, setIsScheduling] = useState(false);
+
+  const handleHearingScheduled = (newHearing: Hearing) => {
+    setCaseHearings(prev => [...prev, newHearing].sort((a,b) => b.date.getTime() - a.date.getTime()));
+    setIsScheduling(false);
+  }
 
   return (
     <div className="space-y-6">
@@ -124,8 +138,18 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
 
         <TabsContent value="hearings">
            <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row justify-between items-center">
                 <CardTitle className="font-headline">Scheduled Hearings</CardTitle>
+                <ScheduleHearing 
+                  caseData={caseData}
+                  client={client}
+                  onHearingScheduled={handleHearingScheduled}
+                >
+                  <Button size="sm">
+                    <CalendarPlus className="mr-2 h-4 w-4"/>
+                    Schedule Hearing
+                  </Button>
+                </ScheduleHearing>
               </CardHeader>
               <CardContent>
                  <Table>
@@ -146,6 +170,13 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                         <TableCell>{hearing.remarks}</TableCell>
                       </TableRow>
                     ))}
+                     {caseHearings.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">
+                          No hearings scheduled.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
