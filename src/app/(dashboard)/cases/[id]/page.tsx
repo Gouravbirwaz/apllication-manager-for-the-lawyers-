@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockCases, mockDocuments, mockHearings, mockTasks, mockUsers } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FilePlus2, CalendarPlus, FolderOpen } from "lucide-react";
+import { FileText, CalendarPlus, FolderOpen } from "lucide-react";
 import { DocumentSummary } from "@/components/document-summary";
 import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
@@ -36,8 +36,9 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
     setCaseId(params.id);
   }, [params.id]);
 
-  if (!caseId) {
-    return <div>Loading...</div>; // Or a skeleton loader
+  if (!isClient || !caseId) {
+    // You can render a skeleton loader here
+    return <div>Loading...</div>;
   }
 
   const caseData = mockCases.find((c) => c.case_id === caseId);
@@ -90,7 +91,7 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                   <div><strong>Client:</strong> {client?.full_name}</div>
                   <div><strong>Lead Lawyer:</strong> {lawyer?.full_name}</div>
                   <div><strong>Court:</strong> {caseData.court_name}</div>
-                  <div><strong>Filing Date:</strong> {isClient ? caseData.filing_date.toLocaleDateString() : '...'}</div>
+                  <div><strong>Filing Date:</strong> {caseData.filing_date.toLocaleDateString()}</div>
                   <div>
                     <strong>Status:</strong> <Badge variant={caseData.status === 'closed' ? 'outline' : 'default'} className="capitalize">{caseData.status}</Badge>
                   </div>
@@ -103,7 +104,7 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                   <p className="text-muted-foreground">{caseData.description}</p>
                 </div>
                 <div className="border-t pt-4">
-                  <Link href={`/dashboard/cases/${caseData.case_id}/documents`}>
+                  <Link href={`/cases/${caseData.case_id}/documents`}>
                     <Button variant="outline">
                       <FolderOpen className="mr-2 h-4 w-4"/> View Documents ({caseDocs.length})
                     </Button>
@@ -114,10 +115,10 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
             <Card>
                 <CardHeader>
                   <CardTitle className="font-headline flex items-center gap-2">
-                    <FilePlus2 /> Intelligent Document Summary
+                    <FileText /> Intelligent Document Analysis
                   </CardTitle>
                   <CardDescription>
-                    Paste text from a legal document to generate a concise summary using AI.
+                    Paste text from a legal document to get a professional analysis of its strengths and weaknesses.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -154,8 +155,8 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                   <TableBody>
                     {caseHearings.map(hearing => (
                        <TableRow key={hearing.hearing_id}>
-                        <TableCell>{isClient ? hearing.date.toLocaleDateString() : '...'}</TableCell>
-                        <TableCell>{isClient ? hearing.date.toLocaleTimeString() : '...'}</TableCell>
+                        <TableCell>{hearing.date.toLocaleDateString()}</TableCell>
+                        <TableCell>{hearing.date.toLocaleTimeString()}</TableCell>
                         <TableCell>{hearing.court_room}</TableCell>
                         <TableCell>{hearing.remarks}</TableCell>
                       </TableRow>
@@ -195,7 +196,7 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                        <TableRow key={task.task_id}>
                         <TableCell>{task.title}</TableCell>
                         <TableCell>{assignee?.full_name}</TableCell>
-                        <TableCell>{isClient ? task.due_date.toLocaleDateString() : '...'}</TableCell>
+                        <TableCell>{task.due_date.toLocaleDateString()}</TableCell>
                         <TableCell>
                           <Badge variant={task.status === 'done' ? 'outline' : 'default'} className="capitalize">{task.status}</Badge>
                         </TableCell>

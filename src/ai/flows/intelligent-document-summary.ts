@@ -1,50 +1,57 @@
 'use server';
 
 /**
- * @fileOverview An intelligent document summarization AI agent.
+ * @fileOverview An intelligent document analysis AI agent.
  *
- * - generateDocumentSummary - A function that generates a summary of a document.
- * - GenerateDocumentSummaryInput - The input type for the generateDocumentSummary function.
- * - GenerateDocumentSummaryOutput - The return type for the generateDocumentSummary function.
+ * - analyzeLegalDocument - A function that analyzes a legal document for positive and negative aspects.
+ * - LegalDocumentAnalysisInput - The input type for the analyzeLegalDocument function.
+ * - LegalDocumentAnalysisOutput - The return type for the analyzeLegalDocument function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const GenerateDocumentSummaryInputSchema = z.object({
+const LegalDocumentAnalysisInputSchema = z.object({
   documentText: z
     .string()
-    .describe('The text content of the document to be summarized.'),
+    .describe('The text content of the legal document to be analyzed.'),
 });
-export type GenerateDocumentSummaryInput = z.infer<typeof GenerateDocumentSummaryInputSchema>;
+export type LegalDocumentAnalysisInput = z.infer<typeof LegalDocumentAnalysisInputSchema>;
 
-const GenerateDocumentSummaryOutputSchema = z.object({
-  summary: z.string().describe('A concise summary of the document.'),
+const LegalDocumentAnalysisOutputSchema = z.object({
+  positiveAspects: z.array(z.string()).describe('Key points, arguments, or evidence in the document that are favorable to our case.'),
+  negativeAspects: z.array(z.string()).describe('Key points, arguments, or evidence in the document that are unfavorable or pose a risk to our case.'),
 });
-export type GenerateDocumentSummaryOutput = z.infer<typeof GenerateDocumentSummaryOutputSchema>;
+export type LegalDocumentAnalysisOutput = z.infer<typeof LegalDocumentAnalysisOutputSchema>;
 
-export async function generateDocumentSummary(
-  input: GenerateDocumentSummaryInput
-): Promise<GenerateDocumentSummaryOutput> {
-  return generateDocumentSummaryFlow(input);
+export async function analyzeLegalDocument(
+  input: LegalDocumentAnalysisInput
+): Promise<LegalDocumentAnalysisOutput> {
+  return legalDocumentAnalysisFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'generateDocumentSummaryPrompt',
-  input: {schema: GenerateDocumentSummaryInputSchema},
-  output: {schema: GenerateDocumentSummaryOutputSchema},
-  prompt: `You are an expert legal summarizer.
+  name: 'legalDocumentAnalysisPrompt',
+  input: {schema: LegalDocumentAnalysisInputSchema},
+  output: {schema: LegalDocumentAnalysisOutputSchema},
+  prompt: `You are a senior advocate in the Indian legal system, known for your sharp analytical skills and strategic insights. Your task is to review a legal document and distill its contents into a concise list of positive and negative aspects from the perspective of your client.
 
-  Summarize the following legal document in a concise and informative manner.
+Your analysis must be objective and tactical.
 
-  Document Text: {{{documentText}}}`,
+1.  **Positive Aspects**: Identify all points, evidence, statements, or legal arguments within the document that can be leveraged to your client's advantage. These are the strengths.
+2.  **Negative Aspects**: Identify all weaknesses, risks, unfavorable statements, or arguments that could be used against your client or that weaken your position.
+
+Present your findings as clear, distinct bullet points under each category.
+
+Document Text to Analyze:
+{{{documentText}}}`,
 });
 
-const generateDocumentSummaryFlow = ai.defineFlow(
+const legalDocumentAnalysisFlow = ai.defineFlow(
   {
-    name: 'generateDocumentSummaryFlow',
-    inputSchema: GenerateDocumentSummaryInputSchema,
-    outputSchema: GenerateDocumentSummaryOutputSchema,
+    name: 'legalDocumentAnalysisFlow',
+    inputSchema: LegalDocumentAnalysisInputSchema,
+    outputSchema: LegalDocumentAnalysisOutputSchema,
   },
   async input => {
     const {output} = await prompt(input);

@@ -1,15 +1,15 @@
 "use server";
 
-import { generateDocumentSummary as generateDocumentSummaryFlow, GenerateDocumentSummaryInput } from "@/ai/flows/intelligent-document-summary";
+import { analyzeLegalDocument as analyzeLegalDocumentFlow, LegalDocumentAnalysisInput } from "@/ai/flows/intelligent-document-summary";
 import { askLegalAssistant as askLegalAssistantFlow, LegalAssistantInput } from "@/ai/flows/legal-assistant-flow";
 
-export async function generateDocumentSummaryAction(input: GenerateDocumentSummaryInput): Promise<{ summary: string } | { error: string }> {
+export async function analyzeLegalDocumentAction(input: LegalDocumentAnalysisInput): Promise<{ analysis: { positiveAspects: string[]; negativeAspects: string[] } } | { error: string }> {
   try {
-    const output = await generateDocumentSummaryFlow(input);
-    return { summary: output.summary };
+    const output = await analyzeLegalDocumentFlow(input);
+    return { analysis: output };
   } catch (e: any) {
     console.error(e);
-    return { error: e.message || "Failed to generate summary." };
+    return { error: e.message || "Failed to generate analysis." };
   }
 }
 
