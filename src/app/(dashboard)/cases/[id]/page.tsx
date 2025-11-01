@@ -29,13 +29,18 @@ import type { Hearing } from "@/lib/types";
 
 export default function CaseDetailPage({ params }: { params: { id: string } }) {
   const [isClient, setIsClient] = useState(false);
-  const id = params.id;
+  const [caseId, setCaseId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    setCaseId(params.id);
+  }, [params.id]);
 
-  const caseData = mockCases.find((c) => c.case_id === id);
+  if (!caseId) {
+    return <div>Loading...</div>; // Or a skeleton loader
+  }
+
+  const caseData = mockCases.find((c) => c.case_id === caseId);
 
   if (!caseData) {
     notFound();
@@ -45,8 +50,16 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
   const lawyer = mockUsers.find((u) => u.uid === caseData.lawyer_id);
   const caseDocs = mockDocuments.filter((d) => d.case_id === caseData.case_id);
   
-  const [caseHearings, setCaseHearings] = useState<Hearing[]>(mockHearings.filter((h) => h.case_id === caseData.case_id));
-  const caseTasks = mockTasks.filter((t) => t.case_id === caseData.case_id);
+  // This state is now local to the component and managed on the client
+  const [caseHearings, setCaseHearings] = useState<Hearing[]>([]);
+  const [caseTasks, setCaseTasks] = useState(mockTasks.filter((t) => t.case_id === caseId));
+
+  useEffect(() => {
+      // Initialize state that depends on finds/filters
+      setCaseHearings(mockHearings.filter((h) => h.case_id === caseId).sort((a,b) => b.date.getTime() - a.date.getTime()));
+      setCaseTasks(mockTasks.filter((t) => t.case_id === caseId));
+  }, [caseId]);
+
 
   const handleHearingScheduled = (newHearing: Hearing) => {
     setCaseHearings(prev => [...prev, newHearing].sort((a,b) => b.date.getTime() - a.date.getTime()));

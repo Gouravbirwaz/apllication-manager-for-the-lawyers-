@@ -24,19 +24,24 @@ import { useState, useEffect } from "react";
 export default function CaseDocumentsPage({ params }: { params: { id: string } }) {
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
-  const id = params.id;
-
+  const [caseId, setCaseId] = useState<string | null>(null);
+  
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    setCaseId(params.id);
+  }, [params.id]);
 
-  const caseData = mockCases.find((c) => c.case_id === id);
+  if (!caseId) {
+    return <div>Loading...</div>; // Or a skeleton loader
+  }
+
+  const caseData = mockCases.find((c) => c.case_id === caseId);
 
   if (!caseData) {
     notFound();
   }
   
-  const caseDocs = mockDocuments.filter((d) => d.case_id === id);
+  const caseDocs = mockDocuments.filter((d) => d.case_id === caseId);
 
   return (
     <Card>
