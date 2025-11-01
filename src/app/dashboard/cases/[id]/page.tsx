@@ -32,8 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { analyzeLegalDocumentAction } from "@/app/actions";
 import type { LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
 
-export default function CaseDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function CaseDetailPage({ params: { id } }: { params: { id: string } }) {
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
 
