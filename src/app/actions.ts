@@ -1,9 +1,9 @@
 "use server";
 
-import { analyzeLegalDocument as analyzeLegalDocumentFlow, LegalDocumentAnalysisInput } from "@/ai/flows/intelligent-document-summary";
+import { analyzeLegalDocument as analyzeLegalDocumentFlow, LegalDocumentAnalysisInput, LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
 import { askLegalAssistant as askLegalAssistantFlow, LegalAssistantInput } from "@/ai/flows/legal-assistant-flow";
 
-export async function analyzeLegalDocumentAction(input: LegalDocumentAnalysisInput): Promise<{ analysis: { positiveAspects: string[]; negativeAspects: string[] } } | { error: string }> {
+export async function analyzeLegalDocumentAction(input: LegalDocumentAnalysisInput): Promise<{ analysis: LegalDocumentAnalysisOutput } | { error: string }> {
   try {
     const output = await analyzeLegalDocumentFlow(input);
     return { analysis: output };

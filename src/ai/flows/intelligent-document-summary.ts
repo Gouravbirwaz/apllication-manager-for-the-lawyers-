@@ -21,6 +21,7 @@ export type LegalDocumentAnalysisInput = z.infer<typeof LegalDocumentAnalysisInp
 const LegalDocumentAnalysisOutputSchema = z.object({
   positiveAspects: z.array(z.string()).describe('Key points, arguments, or evidence in the document that are favorable to our case.'),
   negativeAspects: z.array(z.string()).describe('Key points, arguments, or evidence in the document that are unfavorable or pose a risk to our case.'),
+  strategicAdvice: z.array(z.string()).describe('Actionable advice for the lawyer based on the document analysis.'),
 });
 export type LegalDocumentAnalysisOutput = z.infer<typeof LegalDocumentAnalysisOutputSchema>;
 
@@ -34,12 +35,13 @@ const prompt = ai.definePrompt({
   name: 'legalDocumentAnalysisPrompt',
   input: {schema: LegalDocumentAnalysisInputSchema},
   output: {schema: LegalDocumentAnalysisOutputSchema},
-  prompt: `You are a senior advocate in the Indian legal system, known for your sharp analytical skills and strategic insights. Your task is to review a legal document and distill its contents into a concise list of positive and negative aspects from the perspective of your client.
+  prompt: `You are a senior advocate in the Indian legal system, known for your sharp analytical skills and strategic insights. Your task is to review a legal document and provide actionable advice to the lawyer handling the case.
 
 Your analysis must be objective and tactical.
 
 1.  **Positive Aspects**: Identify all points, evidence, statements, or legal arguments within the document that can be leveraged to your client's advantage. These are the strengths.
 2.  **Negative Aspects**: Identify all weaknesses, risks, unfavorable statements, or arguments that could be used against your client or that weaken your position.
+3.  **Strategic Advice**: Based on the positive and negative aspects, provide a concise, actionable list of strategic recommendations for the lawyer. This advice should suggest next steps, areas to focus on, and potential lines of argument.
 
 Present your findings as clear, distinct bullet points under each category.
 
