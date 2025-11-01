@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -22,9 +22,16 @@ import { CalendarPlus } from 'lucide-react';
 import { mockHearings, mockCases, mockUsers } from "@/lib/mock-data";
 import { ScheduleHearing } from '@/components/hearings/schedule-hearing';
 import type { Hearing } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 export default function HearingsPage() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const [hearings, setHearings] = useState<Hearing[]>(
     [...mockHearings].sort((a, b) => b.date.getTime() - a.date.getTime())
   );
@@ -74,7 +81,7 @@ export default function HearingsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {hearings.map((hearing) => {
+            {isClient ? hearings.map((hearing) => {
               const isUpcoming = hearing.date > new Date();
               return(
                 <TableRow key={hearing.hearing_id}>
@@ -88,8 +95,16 @@ export default function HearingsPage() {
                     </Badge>
                   </TableCell>
                 </TableRow>
-            )})}
-             {hearings.length === 0 && (
+            )}) : [...Array(5)].map((_, i) => (
+              <TableRow key={i}>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+              </TableRow>
+            ))}
+             {isClient && hearings.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center">
                   No hearings scheduled.

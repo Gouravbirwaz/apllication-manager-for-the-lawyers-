@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -15,8 +18,15 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { mockTasks, mockUsers } from "@/lib/mock-data";
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TasksPage() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -37,7 +47,7 @@ export default function TasksPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockTasks.map((task) => {
+            {isClient ? mockTasks.map((task) => {
               const assignee = mockUsers.find(
                 (user) => user.uid === task.assigned_to
               );
@@ -56,7 +66,15 @@ export default function TasksPage() {
                   <TableCell>{assignee?.full_name}</TableCell>
                 </TableRow>
               );
-            })}
+            }) : [...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                </TableRow>
+            ))}
           </TableBody>
         </Table>
       </CardContent>

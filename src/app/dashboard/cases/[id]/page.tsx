@@ -22,11 +22,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FilePlus2, Upload, CalendarPlus } from "lucide-react";
 import { DocumentSummary } from "@/components/document-summary";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
 import type { Hearing } from "@/lib/types";
 
 export default function CaseDetailPage({ params }: { params: { id: string } }) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const caseData = mockCases.find((c) => c.case_id === params.id);
 
   if (!caseData) {
@@ -69,7 +75,7 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                 <div><strong>Client:</strong> {client?.full_name}</div>
                 <div><strong>Lead Lawyer:</strong> {lawyer?.full_name}</div>
                 <div><strong>Court:</strong> {caseData.court_name}</div>
-                <div><strong>Filing Date:</strong> {caseData.filing_date.toLocaleDateString()}</div>
+                <div><strong>Filing Date:</strong> {isClient ? caseData.filing_date.toLocaleDateString() : '...'}</div>
                 <div>
                   <strong>Status:</strong> <Badge variant={caseData.status === 'closed' ? 'outline' : 'default'} className="capitalize">{caseData.status}</Badge>
                 </div>
@@ -107,7 +113,7 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                       <TableRow key={doc.doc_id}>
                         <TableCell className="font-medium">{doc.title}</TableCell>
                         <TableCell className="uppercase">{doc.file_type}</TableCell>
-                        <TableCell>{doc.uploaded_at.toLocaleDateString()}</TableCell>
+                        <TableCell>{isClient ? doc.uploaded_at.toLocaleDateString() : '...'}</TableCell>
                         <TableCell>{doc.version}</TableCell>
                       </TableRow>
                     ))}
@@ -159,8 +165,8 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                   <TableBody>
                     {caseHearings.map(hearing => (
                        <TableRow key={hearing.hearing_id}>
-                        <TableCell>{hearing.date.toLocaleDateString()}</TableCell>
-                        <TableCell>{hearing.date.toLocaleTimeString()}</TableCell>
+                        <TableCell>{isClient ? hearing.date.toLocaleDateString() : '...'}</TableCell>
+                        <TableCell>{isClient ? hearing.date.toLocaleTimeString() : '...'}</TableCell>
                         <TableCell>{hearing.court_room}</TableCell>
                         <TableCell>{hearing.remarks}</TableCell>
                       </TableRow>
@@ -200,7 +206,7 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                        <TableRow key={task.task_id}>
                         <TableCell>{task.title}</TableCell>
                         <TableCell>{assignee?.full_name}</TableCell>
-                        <TableCell>{task.due_date.toLocaleDateString()}</TableCell>
+                        <TableCell>{isClient ? task.due_date.toLocaleDateString() : '...'}</TableCell>
                         <TableCell>
                           <Badge variant={task.status === 'done' ? 'outline' : 'default'} className="capitalize">{task.status}</Badge>
                         </TableCell>
