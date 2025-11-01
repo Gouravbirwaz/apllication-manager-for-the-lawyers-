@@ -6,6 +6,7 @@ import {
   ListTodo,
   PanelLeft,
   Search,
+  Bot
 } from 'lucide-react';
 import {
   Breadcrumb,
@@ -48,7 +49,7 @@ export function AppHeader() {
             </Link>
             <Link
               href="/dashboard/cases"
-              className="flex items-center gap-4 px-2.5 text-foreground"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
             >
               <Briefcase className="h-5 w-5" />
               Cases
@@ -66,6 +67,13 @@ export function AppHeader() {
             >
               <CalendarDays className="h-5 w-5" />
               Hearings
+            </Link>
+            <Link
+              href="/dashboard/ask-bot"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <Bot className="h-5 w-5" />
+              Legal Bot
             </Link>
           </nav>
         </SheetContent>

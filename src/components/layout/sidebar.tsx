@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   ListTodo,
   Settings,
+  Bot,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -23,6 +24,7 @@ const navItems = [
   { href: '/dashboard/cases', icon: Briefcase, label: 'Cases' },
   { href: '/dashboard/tasks', icon: ListTodo, label: 'Tasks' },
   { href: '/dashboard/hearings', icon: CalendarDays, label: 'Hearings' },
+  { href: '/dashboard/ask-bot', icon: Bot, label: 'Legal Bot' },
 ];
 
 export function AppSidebar() {
