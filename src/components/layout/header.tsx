@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { UserNav } from './user-nav';
+import { AshokaChakraIcon } from '../icons/ashoka-chakra-icon';
 
 export function AppHeader() {
   return (
@@ -37,7 +38,7 @@ export function AppHeader() {
               href="/dashboard"
               className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
             >
-              <Home className="h-5 w-5 transition-all group-hover:scale-110" />
+              <AshokaChakraIcon className="h-5 w-5 transition-all group-hover:scale-110" />
               <span className="sr-only">Nyayadeep</span>
             </Link>
             <Link
@@ -87,9 +88,9 @@ export function AppHeader() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/dashboard/cases">All Cases</Link>
-            </BreadcrumbLink>
+            <BreadcrumbPage>
+              All Cases
+            </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>

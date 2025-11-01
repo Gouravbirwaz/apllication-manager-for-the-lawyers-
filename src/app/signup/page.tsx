@@ -5,7 +5,7 @@ export default function SignUpPage() {
   return (
     <AuthFormWrapper
       title="Create an Account"
-      description="Join LawManagerPro to streamline your legal work."
+      description="Join Nyayadeep to streamline your legal work."
       footerText="Already have an account?"
       footerLink="/login"
       footerLinkText="Sign In"
