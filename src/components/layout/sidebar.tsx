@@ -36,8 +36,8 @@ export function AppSidebar() {
             href="#"
             className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
           >
-            <GavelIcon className="h-4 w-4 transition-all group-hover:scale-110" />
-            <span className="sr-only">LawManagerPro</span>
+            <AshokaChakraIcon className="h-5 w-5 transition-all group-hover:scale-110" />
+            <span className="sr-only">Nyayadeep</span>
           </Link>
 
           {navItems.map((item) => (
@@ -79,28 +79,30 @@ export function AppSidebar() {
   );
 }
 
-function GavelIcon(props: React.SVGProps<SVGSVGElement>) {
+function AshokaChakraIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
       viewBox="0 0 24 24"
-      fill="none"
+      fill="currentColor"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="0.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <path d="m14 13-7.5 7.5" />
-      <path d="m18.5 2.5-7.5 7.5" />
-      <path d="m2 22 5-5" />
-      <path d="m15 8 5 5" />
-      <path d="m9 15-5 5" />
-      <path d="m22 2-5 5" />
-      <path d="m8 14 7.5-7.5" />
-      <path d="m3.5 18.5 7.5-7.5" />
+      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/>
+      <circle cx="12" cy="12" r="1.5"/>
+      {Array.from({ length: 24 }).map((_, i) => (
+        <line
+          key={i}
+          x1="12"
+          y1="12"
+          x2="12"
+          y2="4"
+          transform={`rotate(${i * 15} 12 12)`}
+        />
+      ))}
     </svg>
   );
 }

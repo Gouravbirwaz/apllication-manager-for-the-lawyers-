@@ -8,14 +8,14 @@ export function SignUpForm() {
     <div className="grid gap-4">
       <div className="grid gap-2">
         <Label htmlFor="full-name">Full Name</Label>
-        <Input id="full-name" placeholder="Jessica Pearson" required />
+        <Input id="full-name" placeholder="Aditi Sharma" required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="email">Email</Label>
         <Input
           id="email"
           type="email"
-          placeholder="m@example.com"
+          placeholder="a.sharma@example.com"
           required
         />
       </div>

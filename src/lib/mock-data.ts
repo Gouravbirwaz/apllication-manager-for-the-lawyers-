@@ -3,19 +3,19 @@ import type { User, Case, Document, Hearing, Task } from './types';
 export const mockUsers: User[] = [
   {
     uid: 'user-lawyer-1',
-    full_name: 'Jessica Pearson',
-    email: 'j.pearson@lawmanager.pro',
+    full_name: 'Aditi Sharma',
+    email: 'a.sharma@nyayadeep.pro',
     role: 'lawyer',
     phone: '123-456-7890',
-    bar_id: 'JB12345',
+    bar_id: 'AS12345',
     created_at: new Date('2022-01-15T09:00:00Z'),
     profile_pic: 'https://picsum.photos/seed/avatar1/200/200',
     last_login: new Date(),
   },
   {
     uid: 'user-client-1',
-    full_name: 'Mike Ross',
-    email: 'm.ross@example.com',
+    full_name: 'Rohan Mehta',
+    email: 'r.mehta@example.com',
     role: 'client',
     phone: '098-765-4321',
     created_at: new Date('2023-03-20T14:30:00Z'),
@@ -24,8 +24,8 @@ export const mockUsers: User[] = [
   },
   {
     uid: 'user-assistant-1',
-    full_name: 'Donna Paulsen',
-    email: 'd.paulsen@lawmanager.pro',
+    full_name: 'Priya Singh',
+    email: 'p.singh@nyayadeep.pro',
     role: 'assistant',
     phone: '111-222-3333',
     created_at: new Date('2022-02-01T11:00:00Z'),
@@ -34,8 +34,8 @@ export const mockUsers: User[] = [
   },
   {
     uid: 'user-admin-1',
-    full_name: 'Louis Litt',
-    email: 'l.litt@lawmanager.pro',
+    full_name: 'Vikram Rao',
+    email: 'v.rao@nyayadeep.pro',
     role: 'admin',
     phone: '444-555-6666',
     created_at: new Date('2022-01-10T10:00:00Z'),
@@ -49,12 +49,12 @@ const now = new Date();
 export const mockCases: Case[] = [
   {
     case_id: 'case-001',
-    title: 'Ross v. Specter',
+    title: 'Mehta v. Sharma',
     case_type: 'civil',
     status: 'in-progress',
     lawyer_id: 'user-lawyer-1',
     client_id: 'user-client-1',
-    court_name: 'Supreme Court of New York',
+    court_name: 'High Court of Delhi',
     filing_date: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
     next_hearing: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
     description: 'A complex civil litigation case concerning intellectual property rights of a new technology.',
@@ -63,12 +63,12 @@ export const mockCases: Case[] = [
   },
   {
     case_id: 'case-002',
-    title: 'State v. Zane',
+    title: 'State v. Gupta',
     case_type: 'criminal',
     status: 'open',
     lawyer_id: 'user-lawyer-1',
     client_id: 'user-client-1',
-    court_name: 'District Court',
+    court_name: 'District Court, Mumbai',
     filing_date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
     next_hearing: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
     description: 'Criminal defense case involving alleged corporate fraud.',
@@ -77,12 +77,12 @@ export const mockCases: Case[] = [
   },
   {
     case_id: 'case-003',
-    title: 'Hardman Real Estate',
+    title: 'Patel Properties Dispute',
     case_type: 'property',
     status: 'closed',
     lawyer_id: 'user-lawyer-1',
     client_id: 'user-client-1',
-    court_name: 'Property Court',
+    court_name: 'Property Court, Bangalore',
     filing_date: new Date(now.getTime() - 200 * 24 * 60 * 60 * 1000),
     description: 'A property dispute that was successfully settled out of court.',
     created_at: new Date(now.getTime() - 201 * 24 * 60 * 60 * 1000),
@@ -132,7 +132,7 @@ export const mockHearings: Hearing[] = [
     court_room: '5B',
     remarks: 'Preliminary hearing on motions.',
     notified: true,
-    case_title: 'Ross v. Specter'
+    case_title: 'Mehta v. Sharma'
   },
   {
     hearing_id: 'hear-002',
@@ -141,7 +141,7 @@ export const mockHearings: Hearing[] = [
     court_room: '3A',
     remarks: 'Arraignment.',
     notified: false,
-    case_title: 'State v. Zane'
+    case_title: 'State v. Gupta'
   },
    {
     hearing_id: 'hear-003',
@@ -150,7 +150,7 @@ export const mockHearings: Hearing[] = [
     court_room: '5B',
     remarks: 'Discovery conference.',
     notified: false,
-    case_title: 'Ross v. Specter'
+    case_title: 'Mehta v. Sharma'
   },
 ];
 
@@ -164,7 +164,7 @@ export const mockTasks: Task[] = [
     status: 'in-progress',
     due_date: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
     created_at: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
-    case_title: 'Ross v. Specter'
+    case_title: 'Mehta v. Sharma'
   },
   {
     task_id: 'task-002',
@@ -175,7 +175,7 @@ export const mockTasks: Task[] = [
     status: 'pending',
     due_date: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000),
     created_at: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
-    case_title: 'Ross v. Specter'
+    case_title: 'Mehta v. Sharma'
   },
   {
     task_id: 'task-003',
@@ -186,6 +186,6 @@ export const mockTasks: Task[] = [
     status: 'done',
     due_date: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
     created_at: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
-    case_title: 'State v. Zane'
+    case_title: 'State v. Gupta'
   },
 ];
