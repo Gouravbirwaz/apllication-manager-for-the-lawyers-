@@ -79,7 +79,9 @@ export function AppHeader() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>All Cases</BreadcrumbPage>
+            <BreadcrumbLink asChild>
+              <Link href="/cases">All Cases</Link>
+            </BreadcrumbLink>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
