@@ -1,6 +1,6 @@
 'use client';
 
-import { notFound, useRouter } from "next/navigation";
+import { notFound } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -18,12 +18,12 @@ import {
 } from "@/components/ui/table";
 import { mockCases, mockDocuments } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
 import { useState, useEffect } from "react";
+import type { Document } from "@/lib/types";
+import { UploadDocumentDialog } from "@/components/documents/upload-document-dialog";
 
 export default function CaseDocumentsPage({ params }: { params: { id: string } }) {
   const [isClient, setIsClient] = useState(false);
-  const router = useRouter();
   const [caseId, setCaseId] = useState<string | null>(null);
   
   useEffect(() => {
@@ -31,17 +31,27 @@ export default function CaseDocumentsPage({ params }: { params: { id: string } }
     setCaseId(params.id);
   }, [params.id]);
 
-  if (!caseId) {
+  const caseData = mockCases.find((c) => c.case_id === caseId);
+
+  const [caseDocs, setCaseDocs] = useState<Document[]>([]);
+
+  useEffect(() => {
+    if (caseId) {
+      setCaseDocs(mockDocuments.filter((d) => d.case_id === caseId));
+    }
+  }, [caseId]);
+
+  if (!isClient) {
     return <div>Loading...</div>; // Or a skeleton loader
   }
-
-  const caseData = mockCases.find((c) => c.case_id === caseId);
 
   if (!caseData) {
     notFound();
   }
-  
-  const caseDocs = mockDocuments.filter((d) => d.case_id === caseId);
+
+  const handleDocumentUploaded = (newDocument: Document) => {
+    setCaseDocs(prev => [newDocument, ...prev]);
+  };
 
   return (
     <Card>
@@ -52,7 +62,10 @@ export default function CaseDocumentsPage({ params }: { params: { id: string } }
                 A structured view of all documents for this case.
             </CardDescription>
         </div>
-        <Button size="sm"><Upload className="mr-2 h-4 w-4"/> Upload Document</Button>
+        <UploadDocumentDialog 
+          caseId={caseData.case_id} 
+          onDocumentUploaded={handleDocumentUploaded} 
+        />
       </CardHeader>
       <CardContent>
         <Table>
