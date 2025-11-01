@@ -27,6 +27,41 @@ export default function TasksPage() {
     setIsClient(true);
   }, []);
 
+  if (!isClient) {
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-8 w-24 mb-2" />
+          <Skeleton className="h-4 w-48" />
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Status</TableHead>
+                <TableHead>Task</TableHead>
+                <TableHead>Case</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead>Assigned To</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                  </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -47,7 +82,7 @@ export default function TasksPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isClient ? mockTasks.map((task) => {
+            {mockTasks.map((task) => {
               const assignee = mockUsers.find(
                 (user) => user.uid === task.assigned_to
               );
@@ -66,18 +101,11 @@ export default function TasksPage() {
                   <TableCell>{assignee?.full_name}</TableCell>
                 </TableRow>
               );
-            }) : [...Array(5)].map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                </TableRow>
-            ))}
+            })}
           </TableBody>
         </Table>
       </CardContent>
     </Card>
   );
 }
+
