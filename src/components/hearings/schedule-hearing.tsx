@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,24 +20,52 @@ import { Calendar } from '@/components/ui/calendar';
 import { format, setHours, setMinutes } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { Case, Hearing, User } from '@/lib/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { mockUsers } from '@/lib/mock-data';
 
 interface ScheduleHearingProps {
   children: React.ReactNode;
-  caseData: Case;
+  caseData?: Case;
+  cases?: Case[];
   client?: User;
   onHearingScheduled: (hearing: Hearing) => void;
 }
 
-export function ScheduleHearing({ children, caseData, client, onHearingScheduled }: ScheduleHearingProps) {
+export function ScheduleHearing({ children, caseData: initialCaseData, cases, onHearingScheduled }: ScheduleHearingProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | undefined>(initialCaseData?.case_id);
+  const [caseData, setCaseData] = useState<Case | undefined>(initialCaseData);
+  const [client, setClient] = useState<User | undefined>();
+
   const [date, setDate] = useState<Date | undefined>();
   const [time, setTime] = useState('10:00');
   const [courtRoom, setCourtRoom] = useState('');
   const [remarks, setRemarks] = useState('');
 
+  useEffect(() => {
+    if (selectedCaseId && cases) {
+      const newSelectedCase = cases.find(c => c.case_id === selectedCaseId);
+      setCaseData(newSelectedCase);
+    }
+  }, [selectedCaseId, cases]);
+
+  useEffect(() => {
+    if(caseData) {
+      const caseClient = mockUsers.find(u => u.uid === caseData.client_id);
+      setClient(caseClient);
+    }
+  }, [caseData])
+
+
   const handleSchedule = () => {
-    if (!date) {
-      alert('Please select a date.');
+    if (!date || !caseData) {
+      alert('Please select a date and case.');
       return;
     }
 
@@ -65,10 +92,15 @@ export function ScheduleHearing({ children, caseData, client, onHearingScheduled
       setTime('10:00');
       setCourtRoom('');
       setRemarks('');
+      if (!initialCaseData) {
+        setSelectedCaseId(undefined);
+        setCaseData(undefined);
+        setClient(undefined);
+      }
   }
 
   const generateCalendarLink = () => {
-    if (!date) return '#';
+    if (!date || !caseData) return '#';
     
     const [hours, minutes] = time.split(':').map(Number);
     const startDateTime = setMinutes(setHours(date, hours), minutes);
@@ -93,16 +125,34 @@ export function ScheduleHearing({ children, caseData, client, onHearingScheduled
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      setIsOpen(open);
+      if (!open) resetForm();
+    }}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Schedule New Hearing</DialogTitle>
-          <DialogDescription>
+          {caseData ? <DialogDescription>
             Set the details for the next hearing for &quot;{caseData.title}&quot;.
-          </DialogDescription>
+          </DialogDescription> : <DialogDescription>Select a case and set the hearing details.</DialogDescription>}
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          {cases && cases.length > 0 && (
+             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="case" className="text-right">Case</Label>
+                 <Select onValueChange={setSelectedCaseId} value={selectedCaseId}>
+                    <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Select a case" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {cases.map(c => (
+                            <SelectItem key={c.case_id} value={c.case_id}>{c.title}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+             </div>
+          )}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="date" className="text-right">
               Date
@@ -126,6 +176,7 @@ export function ScheduleHearing({ children, caseData, client, onHearingScheduled
                   selected={date}
                   onSelect={setDate}
                   initialFocus
+                  disabled={!caseData}
                 />
               </PopoverContent>
             </Popover>
@@ -139,7 +190,9 @@ export function ScheduleHearing({ children, caseData, client, onHearingScheduled
               type="time" 
               value={time} 
               onChange={e => setTime(e.target.value)}
-              className="col-span-3" />
+              className="col-span-3" 
+              disabled={!caseData}
+            />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="court-room" className="text-right">
@@ -151,6 +204,7 @@ export function ScheduleHearing({ children, caseData, client, onHearingScheduled
               onChange={e => setCourtRoom(e.target.value)}
               className="col-span-3"
               placeholder="e.g., 5B"
+              disabled={!caseData}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -163,16 +217,17 @@ export function ScheduleHearing({ children, caseData, client, onHearingScheduled
               onChange={e => setRemarks(e.target.value)}
               className="col-span-3"
               placeholder="e.g., Preliminary hearing"
+              disabled={!caseData}
             />
           </div>
         </div>
         <DialogFooter className="sm:justify-between gap-2">
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" disabled={!caseData || !date}>
                 <a href={generateCalendarLink()} target="_blank" rel="noopener noreferrer">
                     Add to Google Calendar <ExternalLink className="ml-2 h-4 w-4" />
                 </a>
             </Button>
-          <Button onClick={handleSchedule}>Add to Schedule</Button>
+          <Button onClick={handleSchedule} disabled={!caseData || !date}>Add to Schedule</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

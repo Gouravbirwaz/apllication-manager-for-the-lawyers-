@@ -1,4 +1,3 @@
-
 'use client';
 
 import { notFound } from "next/navigation";
@@ -41,11 +40,8 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
   const [caseHearings, setCaseHearings] = useState<Hearing[]>(mockHearings.filter((h) => h.case_id === caseData.case_id));
   const caseTasks = mockTasks.filter((t) => t.case_id === caseData.case_id);
 
-  const [isScheduling, setIsScheduling] = useState(false);
-
   const handleHearingScheduled = (newHearing: Hearing) => {
     setCaseHearings(prev => [...prev, newHearing].sort((a,b) => b.date.getTime() - a.date.getTime()));
-    setIsScheduling(false);
   }
 
   return (
@@ -142,7 +138,6 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
                 <CardTitle className="font-headline">Scheduled Hearings</CardTitle>
                 <ScheduleHearing 
                   caseData={caseData}
-                  client={client}
                   onHearingScheduled={handleHearingScheduled}
                 >
                   <Button size="sm">
@@ -220,4 +215,3 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
     </div>
   );
 }
-
