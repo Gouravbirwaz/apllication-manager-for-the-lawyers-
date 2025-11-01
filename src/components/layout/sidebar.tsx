@@ -20,9 +20,9 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/cases', icon: Briefcase, label: 'Cases' },
-  { href: '/tasks', icon: ListTodo, label: 'Tasks' },
-  { href: '/hearings', icon: CalendarDays, label: 'Hearings' },
+  { href: '/dashboard/cases', icon: Briefcase, label: 'Cases' },
+  { href: '/dashboard/tasks', icon: ListTodo, label: 'Tasks' },
+  { href: '/dashboard/hearings', icon: CalendarDays, label: 'Hearings' },
 ];
 
 export function AppSidebar() {

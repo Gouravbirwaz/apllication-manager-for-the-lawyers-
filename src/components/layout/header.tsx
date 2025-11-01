@@ -47,21 +47,21 @@ export function AppHeader() {
               Dashboard
             </Link>
             <Link
-              href="/cases"
+              href="/dashboard/cases"
               className="flex items-center gap-4 px-2.5 text-foreground"
             >
               <Briefcase className="h-5 w-5" />
               Cases
             </Link>
             <Link
-              href="/tasks"
+              href="/dashboard/tasks"
               className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
             >
               <ListTodo className="h-5 w-5" />
               Tasks
             </Link>
             <Link
-              href="/hearings"
+              href="/dashboard/hearings"
               className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
             >
               <CalendarDays className="h-5 w-5" />
@@ -80,7 +80,7 @@ export function AppHeader() {
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/cases">All Cases</Link>
+              <Link href="/dashboard/cases">All Cases</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
         </BreadcrumbList>
