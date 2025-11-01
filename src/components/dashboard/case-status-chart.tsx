@@ -1,9 +1,26 @@
 "use client"
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
 import { mockCases } from "@/lib/mock-data"
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { ChartTooltipContent } from "../ui/chart"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+
+const chartConfig = {
+  total: {
+    label: "Cases",
+  },
+  open: {
+    label: "Open",
+    color: "var(--color-chart-1)",
+  },
+  "in-progress": {
+    label: "In Progress",
+    color: "var(--color-chart-2)",
+  },
+  closed: {
+    label: "Closed",
+    color: "var(--color-chart-3)",
+  },
+} satisfies ChartConfig
 
 export function CaseStatusChart() {
   const data = [
@@ -13,28 +30,30 @@ export function CaseStatusChart() {
   ]
 
   return (
-    <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={data}>
-        <XAxis
-          dataKey="name"
-          stroke="#888888"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-        />
-        <YAxis
-          stroke="#888888"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-          tickFormatter={(value) => `${value}`}
-        />
-        <Tooltip
-            cursor={{fill: 'hsl(var(--muted))'}}
-            content={<ChartTooltipContent hideLabel />}
-        />
-        <Bar dataKey="total" radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+      <ResponsiveContainer width="100%" height={350}>
+        <BarChart data={data} accessibilityLayer>
+          <XAxis
+            dataKey="name"
+            stroke="#888888"
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis
+            stroke="#888888"
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(value) => `${value}`}
+          />
+          <ChartTooltip
+              cursor={{fill: 'hsl(var(--muted))'}}
+              content={<ChartTooltipContent hideLabel />}
+          />
+          <Bar dataKey="total" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartContainer>
   )
 }
