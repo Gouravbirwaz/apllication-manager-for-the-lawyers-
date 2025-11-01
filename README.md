@@ -1,5 +1,5 @@
-# Firebase Studio
+# LawManagerPro
 
-This is a NextJS starter in Firebase Studio.
+This is a Next.js application for a law management system called LawManagerPro, built using Firebase.
 
-To get started, take a look at src/app/page.tsx.
+It provides features like secure authentication, case management, document handling with AI-powered summaries, task tracking, and hearing schedules.
