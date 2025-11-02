@@ -6,7 +6,7 @@ async function handler(
   req: NextRequest,
   {params}: {params: {slug: string[]}}
 ) {
-  if (!apiBase-url) {
+  if (!apiBaseUrl) {
     return new NextResponse('API base URL is not configured', {status: 500});
   }
 
