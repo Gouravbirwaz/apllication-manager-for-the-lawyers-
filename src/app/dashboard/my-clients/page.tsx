@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mockHearings } from '@/lib/mock-data';
 import type { User, Case, Hearing } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,65 +8,65 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Briefcase, Calendar, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { mockHearings } from '@/lib/mock-data'; // Hearings will remain mock for now
 
 export default function MyClientsPage() {
     const [clients, setClients] = useState<User[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
     const [clientCases, setClientCases] = useState<Map<string, Case[]>>(new Map());
     const [caseHearings, setCaseHearings] = useState<Map<string, Hearing[]>>(new Map());
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchClientsAndCases = async () => {
             setIsLoading(true);
             setError(null);
             try {
-                // 1. Fetch Clients
-                const clientsApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/clients`;
-                const clientsResponse = await fetch(clientsApiUrl, {
+                // Fetch all cases which include client details
+                const casesApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/with-clients`;
+                const casesResponse = await fetch(casesApiUrl, {
                     headers: {
                         'ngrok-skip-browser-warning': 'true',
                     },
                 });
-                if (!clientsResponse.ok) {
-                    throw new Error('Failed to fetch clients');
-                }
-                const clientsData: User[] = await clientsResponse.json();
-                setClients(clientsData);
 
-                // 2. Fetch Cases for each client
+                if (!casesResponse.ok) {
+                    throw new Error('Failed to fetch cases with client details');
+                }
+                const casesData: Case[] = await casesResponse.json();
+
+                // Process data to group cases by client
+                const clientsMap = new Map<string, User>();
                 const casesByClient = new Map<string, Case[]>();
                 const hearingsByCase = new Map<string, Hearing[]>();
 
-                for (const client of clientsData) {
-                    const casesApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/clients/${client.id}/cases`;
-                    const casesResponse = await fetch(casesApiUrl, {
-                         headers: {
-                            'ngrok-skip-browser-warning': 'true',
-                        },
-                    });
-
-                    if (casesResponse.ok) {
-                        const casesData: any[] = await casesResponse.json();
-                        const processedCases = casesData.map(c => ({
-                            ...c,
-                            case_id: c.id.toString(),
-                            title: c.case_title,
-                            filing_date: new Date(c.created_at),
-                            next_hearing: c.next_hearing ? new Date(c.next_hearing) : undefined,
-                        }));
-                        casesByClient.set(String(client.id), processedCases);
-                        
-                        // This part still uses mock data for hearings.
-                        processedCases.forEach(caseItem => {
-                            const hearings = mockHearings
-                                .filter(h => h.case_id === caseItem.case_id) // This link is weak, needs real data
-                                .sort((a,b) => a.date.getTime() - b.date.getTime());
-                            hearingsByCase.set(caseItem.case_id, hearings);
-                        });
+                casesData.forEach(caseItem => {
+                    const client = caseItem.client;
+                    if (client && !clientsMap.has(String(client.id))) {
+                        clientsMap.set(String(client.id), client);
                     }
-                }
+                    
+                    const processedCase: Case = {
+                        ...caseItem,
+                        case_id: caseItem.id.toString(),
+                        title: caseItem.case_title,
+                        filing_date: new Date(caseItem.created_at),
+                        next_hearing: caseItem.next_hearing ? new Date(caseItem.next_hearing) : undefined,
+                    };
+
+                    if (client) {
+                        const existingCases = casesByClient.get(String(client.id)) || [];
+                        casesByClient.set(String(client.id), [...existingCases, processedCase]);
+                    }
+                    
+                    // This part still uses mock data for hearings.
+                    const hearings = mockHearings
+                        .filter(h => h.case_id === caseItem.case_id) // This link is weak, needs real data
+                        .sort((a,b) => a.date.getTime() - b.date.getTime());
+                    hearingsByCase.set(processedCase.case_id, hearings);
+                });
+
+                setClients(Array.from(clientsMap.values()));
                 setClientCases(casesByClient);
                 setCaseHearings(hearingsByCase);
 
