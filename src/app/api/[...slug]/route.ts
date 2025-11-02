@@ -2,37 +2,38 @@ import {NextRequest, NextResponse} from 'next/server';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-async function handler(req: NextRequest, { params }: { params: { slug: string[] } }) {
+async function handler(req: NextRequest) {
   if (!apiBaseUrl) {
     return new NextResponse('API base URL is not configured', {status: 500});
   }
 
-  const slug = params.slug.join('/');
-  const url = `${apiBaseUrl}/${slug}`;
+  const {pathname, search} = new URL(req.url);
+  const slug = pathname.replace('/api/', '');
+  const url = `${apiBaseUrl}/${slug}${search}`;
 
   const headers = new Headers(req.headers);
-  headers.delete('host'); // Let node-fetch set the host header
+  headers.delete('host');
+  headers.delete('x-forwarded-host');
+  headers.delete('x-forwarded-proto');
+  headers.delete('x-forwarded-port');
+  headers.delete('x-forwarded-for');
 
   try {
     const response = await fetch(url, {
       method: req.method,
       headers: headers,
       body: req.body,
-      // @ts-ignore
-      duplex: 'half', // Required for streaming request bodies
       redirect: 'manual',
     });
 
     const responseHeaders = new Headers(response.headers);
-    // Copy all headers from the backend response, but especially the session cookie
-    for (const [key, value] of response.headers.entries()) {
-       if (key.toLowerCase() === 'set-cookie') {
-         responseHeaders.append(key, value);
-       } else {
-         responseHeaders.set(key, value);
-       }
+    
+    // Pass cookies from the backend to the client
+    const setCookie = response.headers.get('set-cookie');
+    if (setCookie) {
+        responseHeaders.set('set-cookie', setCookie);
     }
-
+    
     return new NextResponse(response.body, {
       status: response.status,
       statusText: response.statusText,
