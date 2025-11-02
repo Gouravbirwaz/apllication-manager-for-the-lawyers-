@@ -1,7 +1,7 @@
 "use server";
 
 import { analyzeLegalDocument as analyzeLegalDocumentFlow, LegalDocumentAnalysisInput, LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
-import { askLegalAssistant as askLegalAssistantFlow, LegalAssistantInput, LegalAssistantOutput } from "@/ai/flows/legal-assistant-flow";
+import { askLegalAssistant as askLegalAssistantFlow, LegalAssistantInput } from "@/ai/flows/legal-assistant-flow";
 
 export async function analyzeLegalDocumentAction(input: LegalDocumentAnalysisInput): Promise<{ analysis: LegalDocumentAnalysisOutput } | { error: string }> {
   try {

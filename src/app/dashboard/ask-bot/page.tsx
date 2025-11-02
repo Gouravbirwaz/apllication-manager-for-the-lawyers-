@@ -31,7 +31,6 @@ export default function AskBotPage() {
 
     const result = await askLegalAssistantAction({
       question,
-      documents: [] // Documents are no longer needed
     });
     
     setIsLoading(false);

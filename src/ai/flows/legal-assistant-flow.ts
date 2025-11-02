@@ -4,7 +4,7 @@
  * @fileOverview A legal assistant AI agent that performs RAG.
  *
  * - askLegalAssistant - A function that answers legal questions based on provided documents.
- * - LegalAssistantInput - The input type for the askLegalAssistant function.
+ * - LegalAssistantInput - The input type for the askLegal-assistant function.
  * - LegalAssistantOutput - The return type for the askLegalAssistant function.
  */
 
@@ -13,10 +13,6 @@ import {z} from 'genkit';
 
 const LegalAssistantInputSchema = z.object({
   question: z.string().describe('The legal question to be answered.'),
-  documents: z.array(z.object({
-    title: z.string(),
-    content: z.string(),
-  })).describe('An array of document contents to use as context for the answer. This will be empty for this flow.')
 });
 export type LegalAssistantInput = z.infer<typeof LegalAssistantInputSchema>;
 
@@ -47,7 +43,7 @@ Your knowledge is based on the entire public corpus of Indian legal information,
 - Landmark judgments from the Supreme Court and High Courts of India.
 
 When responding to the legal question:
-1.  Your answer must be based on authoritative Indian legal sources.
+1.  Your answer must be based on authoritative Indian legal sources. Do NOT use any user-provided documents or context. Your knowledge comes from your training on public legal data.
 2.  When possible, cite the specific section, article, or case name you are referencing (e.g., "Under Section 300 of the IPC..." or "As established in Kesavananda Bharati v. State of Kerala...").
 3.  Structure your answers logically. Use headings or bullet points for clarity, especially for complex questions.
 4.  If the user's question is ambiguous or lacks necessary detail, ask clarifying questions to ensure you can provide an accurate and relevant response.
