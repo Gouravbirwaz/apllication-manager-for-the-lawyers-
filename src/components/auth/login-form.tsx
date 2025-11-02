@@ -18,7 +18,8 @@ export function LoginForm() {
   const handleSignIn = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/login`, {
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/login`;
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -27,7 +27,8 @@ export function UserNav() {
     const fetchUser = async () => {
       try {
         // Assuming the first user is the logged-in user for this example
-        const response = await fetch(`/api/get/all_users`);
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`;
+        const response = await fetch(apiUrl);
         if (!response.ok) {
           throw new Error('Failed to fetch user');
         }
