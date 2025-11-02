@@ -6,11 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, Calendar, Users, Mail } from 'lucide-react';
+import { Briefcase, Calendar, Users, Mail, ArrowRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { mockHearings } from '@/lib/mock-data'; // Hearings will remain mock for now
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function MyClientsPage() {
     const [clients, setClients] = useState<User[]>([]);
@@ -56,6 +57,7 @@ export default function MyClientsPage() {
                     
                     const processedCase: Case = {
                         ...caseItem,
+                        id: caseItem.id, // Ensure id is carried over
                         case_id: String(caseItem.id),
                         title: caseItem.case_title,
                         filing_date: new Date(caseItem.created_at),
@@ -69,7 +71,7 @@ export default function MyClientsPage() {
                     
                     // This part still uses mock data for hearings.
                     const hearings = mockHearings
-                        .filter(h => h.case_id === caseItem.case_id) // This link is weak, needs real data
+                        .filter(h => h.case_id === processedCase.case_id) // This link is weak, needs real data
                         .sort((a,b) => a.date.getTime() - b.date.getTime());
                     hearingsByCase.set(processedCase.case_id, hearings);
                 });
@@ -209,20 +211,27 @@ export default function MyClientsPage() {
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent>
-                                                {upcomingHearings.length > 0 ? (
-                                                    <div className='pl-8 space-y-2'>
-                                                        <h4 className='font-semibold text-sm flex items-center gap-2'><Calendar className="h-4 w-4"/> Upcoming Hearings</h4>
-                                                        <ul className='list-disc pl-5 text-sm text-muted-foreground'>
-                                                        {upcomingHearings.map(h => (
-                                                            <li key={h.hearing_id}>
-                                                                {h.date.toLocaleDateString()} at {h.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - Courtroom {h.court_room}
-                                                            </li>
-                                                        ))}
-                                                        </ul>
-                                                    </div>
-                                                ) : (
-                                                    <p className="pl-8 text-sm text-muted-foreground">No upcoming hearings for this case.</p>
-                                                )}
+                                                <div className="space-y-4 pl-8">
+                                                    {upcomingHearings.length > 0 ? (
+                                                        <div className='space-y-2'>
+                                                            <h4 className='font-semibold text-sm flex items-center gap-2'><Calendar className="h-4 w-4"/> Upcoming Hearings</h4>
+                                                            <ul className='list-disc pl-5 text-sm text-muted-foreground'>
+                                                            {upcomingHearings.map(h => (
+                                                                <li key={h.hearing_id}>
+                                                                    {h.date.toLocaleDateString()} at {h.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - Courtroom {h.court_room}
+                                                                </li>
+                                                            ))}
+                                                            </ul>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-sm text-muted-foreground">No upcoming hearings for this case.</p>
+                                                    )}
+                                                     <Button variant="link" asChild className="p-0 h-auto font-semibold">
+                                                        <Link href={`/dashboard/cases/${c.id}`}>
+                                                            See more details <ArrowRight className="ml-2 h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                </div>
                                             </AccordionContent>
                                         </AccordionItem>
                                     )
