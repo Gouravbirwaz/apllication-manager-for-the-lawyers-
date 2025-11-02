@@ -26,7 +26,7 @@ export function TeamActivity() {
         const sortedUsers = users.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
         setTeamMembers(sortedUsers);
       } catch (err: any) {
-        setError(err.message);
+        setError(err.message || 'An error occurred while fetching users.');
       } finally {
         setIsLoading(false);
       }
@@ -56,8 +56,8 @@ export function TeamActivity() {
              </div>
           ))
         )}
-        {!isLoading && error && (
-          <div className="text-destructive text-sm text-center">{error}</div>
+        {error && (
+          <div className="text-destructive text-sm text-center py-4">{error}</div>
         )}
         {!isLoading && !error && teamMembers.map(user => {
             const initials = user.name

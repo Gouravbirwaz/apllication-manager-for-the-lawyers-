@@ -26,16 +26,19 @@ export function UserNav() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
+        // Assuming the first user is the logged-in user for this example
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`);
         if (!response.ok) {
           throw new Error('Failed to fetch user');
         }
         const users: User[] = await response.json();
         if (users.length > 0) {
-          setUser(users[0]); // Assuming the first user is the logged-in user
+          setUser(users[0]); 
         }
       } catch (error) {
         console.error("Failed to fetch user for UserNav:", error);
+        // Set user to null to show sign in button on error
+        setUser(null);
       } finally {
         setIsLoading(false);
       }

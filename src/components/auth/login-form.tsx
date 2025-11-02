@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 
 export function LoginForm() {
@@ -19,7 +18,7 @@ export function LoginForm() {
   const handleSignIn = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/post/login`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,9 +31,10 @@ export function LoginForm() {
       if (response.ok) {
         toast({
           title: 'Success',
-          description: data.message,
+          description: data.message || 'Logged in successfully.',
         });
-        router.push('/dashboard');
+        // Add a small delay to allow session/cookie to be set before redirecting
+        setTimeout(() => router.push('/dashboard'), 500);
       } else {
         toast({
           title: 'Login Failed',

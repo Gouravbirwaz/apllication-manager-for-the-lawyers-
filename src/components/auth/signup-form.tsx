@@ -45,7 +45,7 @@ export function SignUpForm() {
       if (response.ok) {
         toast({
           title: 'Success',
-          description: data.message,
+          description: data.message || 'Account created successfully.',
         });
         router.push('/dashboard');
       } else {
