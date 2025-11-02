@@ -24,7 +24,7 @@ export default function MyClientsPage() {
             setError(null);
             try {
                 // 1. Fetch Clients
-                const clientsApiUrl = `/api/clients`;
+                const clientsApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/clients`;
                 const clientsResponse = await fetch(clientsApiUrl, {
                     headers: {
                         'ngrok-skip-browser-warning': 'true',
@@ -41,7 +41,7 @@ export default function MyClientsPage() {
                 const hearingsByCase = new Map<string, Hearing[]>();
 
                 for (const client of clientsData) {
-                    const casesApiUrl = `/api/clients/${client.id}/cases`;
+                    const casesApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/clients/${client.id}/cases`;
                     const casesResponse = await fetch(casesApiUrl, {
                          headers: {
                             'ngrok-skip-browser-warning': 'true',
