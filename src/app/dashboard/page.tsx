@@ -3,20 +3,11 @@
 import { useState, useEffect } from 'react';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { CaseStatusChart } from '@/components/dashboard/case-status-chart';
-import { UpcomingHearings } from '@/components/dashboard/upcoming-hearings';
 import { mockCases, mockHearings, mockTasks } from '@/lib/mock-data';
 import { Briefcase, CalendarClock, ListTodo } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Agenda } from '@/components/dashboard/agenda';
 
 export default function DashboardPage() {
   const [isClient, setIsClient] = useState(false);
@@ -28,7 +19,16 @@ export default function DashboardPage() {
   const openCases = mockCases.filter(c => c.status === 'in-progress' || c.status === 'open').length;
   const upcomingHearingsCount = mockHearings.filter(h => h.date > new Date()).length;
   const pendingTasks = mockTasks.filter(t => t.status === 'pending' || t.status === 'in-progress').length;
-  const myPendingTasks = mockTasks.filter(t => t.status !== 'done').slice(0, 5);
+  
+  const agendaItems = [
+    ...mockHearings
+      .filter(h => h.date > new Date())
+      .map(h => ({ type: 'hearing', date: h.date, title: h.case_title, id: h.hearing_id, details: `Courtroom ${h.court_room}` })),
+    ...mockTasks
+      .filter(t => t.status !== 'done')
+      .map(t => ({ type: 'task', date: t.due_date, title: t.title, id: t.task_id, details: t.case_title }))
+  ].sort((a, b) => a.date.getTime() - b.date.getTime());
+
 
   if (!isClient) {
     return (
@@ -73,33 +73,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-        <Card>
-          <CardHeader>
-             <Skeleton className="h-6 w-1/4" />
-          </CardHeader>
-          <CardContent>
-             <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-                    <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-                    <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-                    <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                {[...Array(5)].map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
-                    </TableRow>
-                ))}
-                </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -113,57 +86,28 @@ export default function DashboardPage() {
         <StatCard title="Pending Tasks" value={pendingTasks.toString()} icon={ListTodo} />
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
-          <CardHeader>
-            <CardTitle className="font-headline">Case Status Overview</CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <CaseStatusChart />
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="font-headline">Upcoming Hearings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <UpcomingHearings />
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Agenda</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Agenda items={agendaItems} />
+                </CardContent>
+            </Card>
+        </div>
+        <div>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Case Status Overview</CardTitle>
+                </CardHeader>
+                <CardContent className="pl-2">
+                    <CaseStatusChart />
+                </CardContent>
+            </Card>
+        </div>
       </div>
-
-       <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">My Pending Tasks</CardTitle>
-        </CardHeader>
-        <CardContent>
-           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Task</TableHead>
-                <TableHead>Case</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {myPendingTasks.map(task => (
-                <TableRow key={task.task_id}>
-                  <TableCell className="font-medium">{task.title}</TableCell>
-                  <TableCell>{task.case_title}</TableCell>
-                  <TableCell>{task.due_date.toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Badge variant={task.status === 'pending' ? 'destructive' : 'secondary'}>
-                      {task.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
     </div>
   );
 }
