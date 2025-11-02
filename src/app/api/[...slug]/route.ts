@@ -2,38 +2,38 @@ import {NextRequest, NextResponse} from 'next/server';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-async function handler(req: NextRequest) {
+async function handler(
+  req: NextRequest,
+  {params}: {params: {slug: string[]}}
+) {
   if (!apiBaseUrl) {
     return new NextResponse('API base URL is not configured', {status: 500});
   }
 
-  const {pathname, search} = new URL(req.url);
-  const slug = pathname.replace('/api/', '');
-  const url = `${apiBaseUrl}/${slug}${search}`;
+  // The `slug` param is an array of path segments.
+  // e.g., for `/api/get/all_users`, slug would be `['get', 'all_users']`
+  const slugPath = params.slug.join('/');
+  const url = `${apiBaseUrl}/${slugPath}${req.nextUrl.search}`;
 
   const headers = new Headers(req.headers);
   headers.delete('host');
-  headers.delete('x-forwarded-host');
-  headers.delete('x-forwarded-proto');
-  headers.delete('x-forwarded-port');
-  headers.delete('x-forwarded-for');
 
   try {
     const response = await fetch(url, {
       method: req.method,
       headers: headers,
-      body: req.body,
+      body: req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined,
       redirect: 'manual',
     });
 
+    // Create a new response with the backend's headers, status, and body.
     const responseHeaders = new Headers(response.headers);
-    
-    // Pass cookies from the backend to the client
+    // Pass cookies from the backend to the client.
     const setCookie = response.headers.get('set-cookie');
     if (setCookie) {
-        responseHeaders.set('set-cookie', setCookie);
+      responseHeaders.set('set-cookie', setCookie);
     }
-    
+
     return new NextResponse(response.body, {
       status: response.status,
       statusText: response.statusText,
