@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Bot, FileText, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { Bot, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,13 +9,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { askLegalAssistantAction } from '@/app/actions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { mockDocuments } from '@/lib/mock-data';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Document } from '@/lib/types';
-
 
 interface Message {
   sender: 'user' | 'bot';
@@ -27,7 +20,6 @@ export default function AskBotPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
 
   const handleAsk = async () => {
     if (!question.trim()) return;
@@ -37,23 +29,9 @@ export default function AskBotPage() {
     setIsLoading(true);
     setQuestion('');
 
-    const selectedDocuments = mockDocuments.filter(doc => selectedDocIds.has(doc.doc_id) && doc.summary);
-    
-    if (selectedDocuments.length === 0) {
-       toast({
-        title: 'No Documents Selected',
-        description: 'Please select at least one document to provide context for your question.',
-        variant: 'destructive',
-      });
-      const errorMessage: Message = { sender: 'bot', text: "I can't answer without any document context. Please select one or more documents first." };
-      setMessages(prev => [...prev, errorMessage]);
-      setIsLoading(false);
-      return;
-    }
-
     const result = await askLegalAssistantAction({
       question,
-      documents: selectedDocuments.map(d => ({ title: d.title, content: d.summary! }))
+      documents: [] // Documents are no longer needed
     });
     
     setIsLoading(false);
@@ -71,20 +49,6 @@ export default function AskBotPage() {
       setMessages(prev => [...prev, botMessage]);
     }
   };
-  
-  const toggleDocumentSelection = (docId: string) => {
-    setSelectedDocIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(docId)) {
-        newSet.delete(docId);
-      } else {
-        newSet.add(docId);
-      }
-      return newSet;
-    });
-  };
-
-  const relevantDocuments = useMemo(() => mockDocuments.filter(doc => doc.summary), []);
 
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-8rem)] gap-4">
@@ -94,40 +58,9 @@ export default function AskBotPage() {
                 <Bot /> Nyayadeep AI Assistant
                 </CardTitle>
                 <CardDescription>
-                Your intelligent legal research partner. Select documents below and ask a question about them.
+                Your intelligent legal research partner. Ask questions about Indian law, statutes, and legal procedures.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
-                            <span>{selectedDocIds.size > 0 ? `${selectedDocIds.size} document(s) selected` : 'Select Documents for Context'}</span>
-                            <ChevronDown className="h-4 w-4" />
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                         <ScrollArea className="h-72">
-                            <div className="p-4 space-y-4">
-                            {relevantDocuments.length > 0 ? relevantDocuments.map(doc => (
-                                <div key={doc.doc_id} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={doc.doc_id}
-                                    checked={selectedDocIds.has(doc.doc_id)}
-                                    onCheckedChange={() => toggleDocumentSelection(doc.doc_id)}
-                                />
-                                <Label htmlFor={doc.doc_id} className="font-normal cursor-pointer flex-1">
-                                    <p className="font-medium">{doc.title}</p>
-                                    <p className="text-xs text-muted-foreground">{doc.case_title}</p>
-                                </Label>
-                                </div>
-                            )) : (
-                                <p className="text-sm text-center text-muted-foreground py-4">No documents with content available for analysis.</p>
-                            )}
-                            </div>
-                        </ScrollArea>
-                    </PopoverContent>
-                </Popover>
-            </CardContent>
         </Card>
         <Card className="flex flex-col flex-1">
         <CardContent className="flex-1 overflow-y-auto pr-4 space-y-6 pt-6">
@@ -166,8 +99,8 @@ export default function AskBotPage() {
             {messages.length === 0 && !isLoading && (
                 <div className="text-center text-muted-foreground pt-16">
                 <FileText className="mx-auto h-12 w-12 mb-4"/>
-                <p>Select documents and ask a question to get started.</p>
-                <p className="text-xs">e.g., "Summarize the plaintiff's primary claims."</p>
+                <p>Ask a legal question to get started.</p>
+                <p className="text-xs">e.g., "What are the grounds for divorce under the Hindu Marriage Act?"</p>
                 </div>
             )}
 
@@ -175,7 +108,7 @@ export default function AskBotPage() {
         <div className="p-4 border-t">
             <div className="relative">
             <Textarea
-                placeholder="Type your question about the selected documents..."
+                placeholder="Type your legal question here..."
                 className="pr-20"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
