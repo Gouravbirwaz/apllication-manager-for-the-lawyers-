@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { Case } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { AddCaseDialog } from '@/components/cases/add-case-dialog';
 
 // Minimal components to avoid full import during skeleton load
 const Table = ({className, ...props}: React.HTMLAttributes<HTMLTableElement>) => <table className={className} {...props} />
@@ -23,41 +24,46 @@ export default function CasesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchCases = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/with-clients`;
-        const response = await fetch(apiUrl, {
-          headers: {
-            'ngrok-skip-browser-warning': 'true',
-          },
-        });
-        if (!response.ok) {
-          throw new Error(`Failed to fetch cases. Status: ${response.status}`);
-        }
-        const data: any[] = await response.json();
-
-        // Data transformation to match frontend types
-        const transformedCases: Case[] = data.map(c => ({
-          ...c,
-          case_id: c.id.toString(), // For component key and linking
-          title: c.case_title, // For Data Table search
-          next_hearing: c.next_hearing ? new Date(c.next_hearing) : undefined,
-          filing_date: new Date(c.created_at)
-        }));
-        
-        setCases(transformedCases);
-      } catch (err: any) {
-        setError(err.message || 'An unexpected error occurred.');
-      } finally {
-        setIsLoading(false);
+  const fetchCases = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/with-clients`;
+      const response = await fetch(apiUrl, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch cases. Status: ${response.status}`);
       }
-    };
+      const data: any[] = await response.json();
 
+      // Data transformation to match frontend types
+      const transformedCases: Case[] = data.map(c => ({
+        ...c,
+        case_id: c.id.toString(), // For component key and linking
+        title: c.case_title, // For Data Table search
+        next_hearing: c.next_hearing ? new Date(c.next_hearing) : undefined,
+        filing_date: new Date(c.created_at)
+      }));
+      
+      setCases(transformedCases);
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCases();
   }, []);
+
+  const handleCaseAdded = (newCase: Case) => {
+    // Re-fetch all cases to ensure data is fresh from the server
+    fetchCases();
+  };
 
   if (isLoading) {
     return (
@@ -108,12 +114,14 @@ export default function CasesPage() {
             <CardTitle className="font-headline text-2xl">Cases</CardTitle>
             <CardDescription>Manage your legal cases.</CardDescription>
           </div>
-          <Button size="sm" className="gap-1">
-            <PlusCircle className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              New Case
-            </span>
-          </Button>
+          <AddCaseDialog onCaseAdded={handleCaseAdded}>
+            <Button size="sm" className="gap-1">
+              <PlusCircle className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                New Case
+              </span>
+            </Button>
+          </AddCaseDialog>
         </div>
       </CardHeader>
       <CardContent>
