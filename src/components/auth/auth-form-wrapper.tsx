@@ -20,12 +20,12 @@ export function AuthFormWrapper({
   footerLinkText,
 }: AuthFormWrapperProps) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
        <div className="absolute top-8 flex items-center gap-2 text-2xl font-headline text-primary">
           <AshokaChakraIcon className="h-8 w-8" />
           <h1>Nyayadeep</h1>
         </div>
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm border-primary/20">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline">{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
@@ -34,7 +34,7 @@ export function AuthFormWrapper({
         <CardFooter>
           <div className="text-center text-sm w-full">
             {footerText}{' '}
-            <Link href={footerLink} className="underline text-primary">
+            <Link href={footerLink} className="underline text-primary/90 hover:text-primary">
               {footerLinkText}
             </Link>
           </div>
