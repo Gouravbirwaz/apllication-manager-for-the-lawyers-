@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,6 +9,7 @@ import { Briefcase, CalendarClock, ListTodo } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Agenda } from '@/components/dashboard/agenda';
+import { TeamActivity } from '@/components/dashboard/team-activity';
 
 export default function DashboardPage() {
   const [isClient, setIsClient] = useState(false);
@@ -39,33 +41,56 @@ export default function DashboardPage() {
             <Card><CardHeader><Skeleton className="h-4 w-24" /></CardHeader><CardContent><Skeleton className="h-8 w-12" /></CardContent></Card>
             <Card><CardHeader><Skeleton className="h-4 w-24" /></CardHeader><CardContent><Skeleton className="h-8 w-12" /></CardContent></Card>
         </div>
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-          <Card className="lg:col-span-4">
-            <CardHeader>
-              <Skeleton className="h-6 w-1/2" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-[350px] w-full" />
-            </CardContent>
-          </Card>
-          <Card className="lg:col-span-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="space-y-8">
+             <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-1/2" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="flex items-center">
+                        <div className="flex flex-col items-center justify-center p-2 mr-4 rounded-md">
+                          <Skeleton className="h-4 w-8 mb-1" />
+                          <Skeleton className="h-6 w-6" />
+                        </div>
+                        <div className="ml-4 space-y-1">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-24" />
+                        </div>
+                        <div className="ml-auto">
+                          <Skeleton className="h-4 w-12" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-1/2" />
+              </CardHeader>
+              <CardContent className="pl-2">
+                <Skeleton className="h-[250px] w-full" />
+              </CardContent>
+            </Card>
+          </div>
+          <Card>
              <CardHeader>
                <Skeleton className="h-6 w-1/2" />
             </CardHeader>
             <CardContent>
                <div className="space-y-4">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-center">
-                       <div className="flex flex-col items-center justify-center p-2 mr-4 rounded-md">
-                         <Skeleton className="h-4 w-8 mb-1" />
-                         <Skeleton className="h-6 w-6" />
+                    <div key={i} className="flex items-center gap-4">
+                       <Skeleton className="h-9 w-9 rounded-full" />
+                       <div className="flex-1 space-y-1">
+                         <Skeleton className="h-4 w-24" />
+                         <Skeleton className="h-3 w-16" />
                        </div>
-                       <div className="ml-4 space-y-1">
-                         <Skeleton className="h-4 w-32" />
-                         <Skeleton className="h-3 w-24" />
-                       </div>
-                       <div className="ml-auto">
-                         <Skeleton className="h-4 w-12" />
+                       <div className="text-right">
+                          <Skeleton className="h-4 w-20" />
                        </div>
                      </div>
                   ))}
@@ -86,27 +111,26 @@ export default function DashboardPage() {
         <StatCard title="Pending Tasks" value={pendingTasks.toString()} icon={ListTodo} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Agenda</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Agenda items={agendaItems} />
-                </CardContent>
-            </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div className="space-y-8">
+          <Card>
+              <CardHeader>
+                  <CardTitle className="font-headline">Agenda</CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <Agenda items={agendaItems} />
+              </CardContent>
+          </Card>
+          <Card>
+              <CardHeader>
+                  <CardTitle className="font-headline">Case Status Overview</CardTitle>
+              </CardHeader>
+              <CardContent className="pl-2">
+                  <CaseStatusChart />
+              </CardContent>
+          </Card>
         </div>
-        <div>
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Case Status Overview</CardTitle>
-                </CardHeader>
-                <CardContent className="pl-2">
-                    <CaseStatusChart />
-                </CardContent>
-            </Card>
-        </div>
+        <TeamActivity />
       </div>
     </div>
   );

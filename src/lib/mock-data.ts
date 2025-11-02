@@ -10,7 +10,7 @@ export const mockUsers: User[] = [
     bar_id: 'AS12345',
     created_at: new Date('2022-01-15T09:00:00Z'),
     profile_pic: 'https://picsum.photos/seed/avatar1/200/200',
-    last_login: new Date(),
+    last_login: new Date(new Date().getTime() - 15 * 60 * 1000), // 15 minutes ago
   },
   {
     uid: 'user-client-1',
@@ -20,7 +20,7 @@ export const mockUsers: User[] = [
     phone: '098-765-4321',
     created_at: new Date('2023-03-20T14:30:00Z'),
     profile_pic: 'https://picsum.photos/seed/avatar2/200/200',
-    last_login: new Date(),
+    last_login: new Date(new Date().getTime() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
   },
   {
     uid: 'user-assistant-1',
@@ -30,7 +30,7 @@ export const mockUsers: User[] = [
     phone: '111-222-3333',
     created_at: new Date('2022-02-01T11:00:00Z'),
     profile_pic: 'https://picsum.photos/seed/avatar3/200/200',
-    last_login: new Date(),
+    last_login: new Date(new Date().getTime() - 2 * 60 * 60 * 1000), // 2 hours ago
   },
   {
     uid: 'user-admin-1',
@@ -40,7 +40,7 @@ export const mockUsers: User[] = [
     phone: '444-555-6666',
     created_at: new Date('2022-01-10T10:00:00Z'),
     profile_pic: 'https://picsum.photos/seed/avatar4/200/200',
-    last_login: new Date(),
+    last_login: new Date(new Date().getTime() - 5 * 60 * 1000), // 5 minutes ago
   },
 ];
 
