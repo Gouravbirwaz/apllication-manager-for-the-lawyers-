@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,7 +16,9 @@ export function TeamActivity() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
+          credentials: 'include',
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch team members');
         }
