@@ -6,9 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, Calendar, Users } from 'lucide-react';
+import { Briefcase, Calendar, Users, Mail } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { mockHearings } from '@/lib/mock-data'; // Hearings will remain mock for now
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 export default function MyClientsPage() {
     const [clients, setClients] = useState<User[]>([]);
@@ -16,6 +18,8 @@ export default function MyClientsPage() {
     const [caseHearings, setCaseHearings] = useState<Map<string, Hearing[]>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+
 
     useEffect(() => {
         const fetchClientsAndCases = async () => {
@@ -33,9 +37,8 @@ export default function MyClientsPage() {
                 if (!casesResponse.ok) {
                     throw new Error('Failed to fetch cases with client details');
                 }
-                const casesData: Case[] = await casesResponse.json();
-
-                // Process data to group cases by client
+                const casesData: any[] = await casesResponse.json();
+                
                 const clientsMap = new Map<string, User>();
                 const casesByClient = new Map<string, Case[]>();
                 const hearingsByCase = new Map<string, Hearing[]>();
@@ -43,12 +46,17 @@ export default function MyClientsPage() {
                 casesData.forEach(caseItem => {
                     const client = caseItem.client;
                     if (client && !clientsMap.has(String(client.id))) {
-                        clientsMap.set(String(client.id), client);
+                        clientsMap.set(String(client.id), {
+                           ...client,
+                           uid: String(client.id),
+                           full_name: client.full_name || client.name,
+                           profile_pic: client.photo_url
+                        });
                     }
                     
                     const processedCase: Case = {
                         ...caseItem,
-                        case_id: caseItem.id.toString(),
+                        case_id: String(caseItem.id),
                         title: caseItem.case_title,
                         filing_date: new Date(caseItem.created_at),
                         next_hearing: caseItem.next_hearing ? new Date(caseItem.next_hearing) : undefined,
@@ -65,8 +73,10 @@ export default function MyClientsPage() {
                         .sort((a,b) => a.date.getTime() - b.date.getTime());
                     hearingsByCase.set(processedCase.case_id, hearings);
                 });
+                
+                const sortedClients = Array.from(clientsMap.values()).sort((a, b) => a.full_name.localeCompare(b.full_name));
 
-                setClients(Array.from(clientsMap.values()));
+                setClients(sortedClients);
                 setClientCases(casesByClient);
                 setCaseHearings(hearingsByCase);
 
@@ -79,6 +89,11 @@ export default function MyClientsPage() {
 
         fetchClientsAndCases();
     }, []);
+    
+    const filteredClients = clients.filter(client =>
+      client.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
 
     if (isLoading) {
         return (
@@ -88,6 +103,9 @@ export default function MyClientsPage() {
                         <Skeleton className="h-8 w-48 mb-2" />
                         <Skeleton className="h-4 w-64" />
                     </CardHeader>
+                    <CardContent>
+                         <Skeleton className="h-10 w-full max-w-sm" />
+                    </CardContent>
                 </Card>
                 <div className="space-y-4">
                     {[...Array(2)].map((_, i) => (
@@ -138,24 +156,40 @@ export default function MyClientsPage() {
                         An overview of your clients and their associated cases.
                     </CardDescription>
                 </CardHeader>
+                <CardContent>
+                    <Input 
+                        placeholder="Search clients..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="max-w-sm"
+                    />
+                </CardContent>
             </Card>
 
-            {clients.length > 0 ? clients.map(client => {
+            {filteredClients.length > 0 ? filteredClients.map(client => {
                 const cases = clientCases.get(String(client.id)) || [];
                 const clientName = client.full_name || 'Unnamed Client';
                 const clientInitials = clientName.split(' ').map(n => n[0]).join('');
 
                 return (
                     <Card key={client.id}>
-                        <CardHeader className="flex flex-row items-center gap-4">
-                            <Avatar className="h-12 w-12">
-                                <AvatarImage src={client.photo_url} />
-                                <AvatarFallback>{clientInitials}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <CardTitle className="text-xl font-headline">{clientName}</CardTitle>
-                                <CardDescription>{client.email}</CardDescription>
+                        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-12 w-12">
+                                    <AvatarImage src={client.profile_pic} />
+                                    <AvatarFallback>{clientInitials}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <CardTitle className="text-xl font-headline">{clientName}</CardTitle>
+                                    <CardDescription>{client.email}</CardDescription>
+                                </div>
                             </div>
+                            <Button variant="outline" asChild>
+                                <a href={`mailto:${client.email}`}>
+                                    <Mail className="mr-2 h-4 w-4" />
+                                    Email Client
+                                </a>
+                            </Button>
                         </CardHeader>
                         <CardContent>
                             <Accordion type="single" collapsible className="w-full">
@@ -203,7 +237,7 @@ export default function MyClientsPage() {
             }) : (
                 <Card>
                     <CardContent className="p-12 text-center text-muted-foreground">
-                        You have not been assigned to any clients yet.
+                        {searchTerm ? `No clients found for "${searchTerm}".` : 'You have not been assigned to any clients yet.'}
                     </CardContent>
                 </Card>
             )}
