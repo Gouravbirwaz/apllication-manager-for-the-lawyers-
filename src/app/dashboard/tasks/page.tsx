@@ -17,15 +17,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { mockTasks, mockUsers } from "@/lib/mock-data";
+import { mockCases, mockTasks, mockUsers } from "@/lib/mock-data";
 import { Skeleton } from '@/components/ui/skeleton';
+import { AddTaskDialog } from '@/components/tasks/add-task-dialog';
+import { Button } from '@/components/ui/button';
+import { PlusCircle } from 'lucide-react';
+import type { Task } from '@/lib/types';
+
 
 export default function TasksPage() {
   const [isClient, setIsClient] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>(mockTasks);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const handleTaskAdded = (newTask: Task) => {
+    setTasks(prev => [...prev, newTask].sort((a,b) => a.due_date.getTime() - b.due_date.getTime()));
+  };
 
   if (!isClient) {
     return (
@@ -64,11 +74,19 @@ export default function TasksPage() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="font-headline text-2xl">My Tasks</CardTitle>
-        <CardDescription>
-          A list of all tasks assigned to you.
-        </CardDescription>
+      <CardHeader className="flex flex-row justify-between items-center">
+        <div>
+            <CardTitle className="font-headline text-2xl">My Tasks</CardTitle>
+            <CardDescription>
+            A list of all tasks assigned to you.
+            </CardDescription>
+        </div>
+        <AddTaskDialog cases={mockCases} onTaskAdded={handleTaskAdded}>
+             <Button size="sm">
+                <PlusCircle className="mr-2 h-4 w-4"/>
+                Add Task
+            </Button>
+        </AddTaskDialog>
       </CardHeader>
       <CardContent>
         <Table>
@@ -82,7 +100,7 @@ export default function TasksPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockTasks.map((task) => {
+            {tasks.map((task) => {
               const assignee = mockUsers.find(
                 (user) => user.uid === task.assigned_to
               );
@@ -108,4 +126,3 @@ export default function TasksPage() {
     </Card>
   );
 }
-

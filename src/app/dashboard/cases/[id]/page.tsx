@@ -20,17 +20,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockCases, mockDocuments, mockHearings, mockTasks, mockUsers } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FilePlus2, Upload, CalendarPlus, Wand2 } from "lucide-react";
+import { FilePlus2, Upload, CalendarPlus, Wand2, PlusCircle } from "lucide-react";
 import { DocumentAnalysis } from "@/components/document-analysis";
 import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
 import { UploadDocumentDialog } from "@/components/documents/upload-document-dialog";
-import type { Hearing, Document } from "@/lib/types";
+import type { Hearing, Document, Task } from "@/lib/types";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeLegalDocumentAction } from "@/app/actions";
 import type { LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
+import { AddTaskDialog } from "@/components/tasks/add-task-dialog";
 
 export default function CaseDetailPage() {
   const params = useParams();
@@ -56,7 +57,7 @@ export default function CaseDetailPage() {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(initialCaseDocs[0]?.doc_id || null);
   
   const [caseHearings, setCaseHearings] = useState<Hearing[]>(mockHearings.filter((h) => h.case_id === caseData.case_id));
-  const caseTasks = mockTasks.filter((t) => t.case_id === caseData.case_id);
+  const [caseTasks, setCaseTasks] = useState<Task[]>(mockTasks.filter((t) => t.case_id === caseData.case_id));
 
   const [analysis, setAnalysis] = useState<LegalDocumentAnalysisOutput | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
@@ -68,6 +69,12 @@ export default function CaseDetailPage() {
   const handleDocumentUploaded = (newDocument: Document) => {
     setCaseDocs(prev => [newDocument, ...prev]);
   };
+  
+  const handleTaskAdded = (newTask: Task) => {
+    if(newTask.case_id === id) {
+        setCaseTasks(prev => [...prev, newTask].sort((a, b) => a.due_date.getTime() - b.due_date.getTime()));
+    }
+  }
 
   const handleAnalyzeDocument = async () => {
     if (!selectedDocId) {
@@ -280,8 +287,18 @@ export default function CaseDetailPage() {
         
         <TabsContent value="tasks">
           <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row justify-between items-center">
                 <CardTitle className="font-headline">Associated Tasks</CardTitle>
+                <AddTaskDialog 
+                  cases={mockCases}
+                  onTaskAdded={handleTaskAdded}
+                  defaultCaseId={id}
+                >
+                  <Button size="sm">
+                    <PlusCircle className="mr-2 h-4 w-4"/>
+                    Add Task
+                  </Button>
+                </AddTaskDialog>
               </CardHeader>
               <CardContent>
                  <Table>
@@ -321,5 +338,4 @@ export default function CaseDetailPage() {
       </Tabs>
     </div>
   );
-
-    
+}
