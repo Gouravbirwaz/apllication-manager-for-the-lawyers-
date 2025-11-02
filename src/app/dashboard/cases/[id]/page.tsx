@@ -1,6 +1,6 @@
 'use client';
 
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -32,8 +32,9 @@ import { useToast } from "@/hooks/use-toast";
 import { analyzeLegalDocumentAction } from "@/app/actions";
 import type { LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
 
-export default function CaseDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function CaseDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
 
@@ -320,4 +321,5 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
       </Tabs>
     </div>
   );
-}
+
+    
