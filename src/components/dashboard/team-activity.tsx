@@ -22,7 +22,7 @@ export function TeamActivity() {
         }
         const users: User[] = await response.json();
         
-        const sortedUsers = users.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        const sortedUsers = users.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         setTeamMembers(sortedUsers);
       } catch (err: any) {
         setError(err.message || 'An error occurred while fetching users.');
@@ -76,7 +76,7 @@ export function TeamActivity() {
                         <p className="text-sm text-muted-foreground capitalize">Lawyer</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm font-medium">{formatDistanceToNow(new Date(user.updated_at), { addSuffix: true })}</p>
+                        <p className="text-sm font-medium">{formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}</p>
                     </div>
                 </div>
             )
