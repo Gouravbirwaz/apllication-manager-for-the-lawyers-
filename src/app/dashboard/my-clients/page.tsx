@@ -150,7 +150,7 @@ export default function MyClientsPage() {
                     <Card key={client.id}>
                         <CardHeader className="flex flex-row items-center gap-4">
                             <Avatar className="h-12 w-12">
-                                <AvatarImage src={client.profile_pic} />
+                                <AvatarImage src={client.photo_url} />
                                 <AvatarFallback>{clientInitials}</AvatarFallback>
                             </Avatar>
                             <div>
