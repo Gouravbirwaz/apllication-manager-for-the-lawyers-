@@ -1,3 +1,7 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,11 +14,43 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { mockUsers } from '@/lib/mock-data';
 import Link from 'next/link';
+import { Skeleton } from '../ui/skeleton';
+
+interface ApiUser {
+  id: number;
+  name: string;
+  email: string;
+  photo_url: string;
+}
 
 export function UserNav() {
-  const user = mockUsers.find(u => u.role === 'lawyer');
+  const [user, setUser] = useState<ApiUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch user');
+        }
+        const users: ApiUser[] = await response.json();
+        if (users.length > 0) {
+          setUser(users[0]); // Assuming the first user is the logged-in user
+        }
+      } catch (error) {
+        console.error("Failed to fetch user for UserNav:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  if (isLoading) {
+    return <Skeleton className="h-8 w-8 rounded-full" />;
+  }
 
   if (!user) {
     return (
@@ -24,7 +60,7 @@ export function UserNav() {
     );
   }
 
-  const initials = user.full_name
+  const initials = user.name
     .split(' ')
     .map((n) => n[0])
     .join('');
@@ -34,7 +70,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={user.profile_pic} alt={`@${user.full_name}`} data-ai-hint="person face" />
+            <AvatarImage src={user.photo_url} alt={`@${user.name}`} data-ai-hint="person face" />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>
@@ -42,7 +78,7 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.full_name}</p>
+            <p className="text-sm font-medium leading-none">{user.name}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>

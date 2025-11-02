@@ -1,16 +1,45 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { mockUsers } from "@/lib/mock-data";
 import { formatDistanceToNow } from 'date-fns';
+import { Skeleton } from '../ui/skeleton';
+
+interface ApiUser {
+  id: number;
+  name: string;
+  email: string;
+  photo_url: string;
+  updated_at: string;
+}
 
 export function TeamActivity() {
+  const [teamMembers, setTeamMembers] = useState<ApiUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const teamMembers = mockUsers
-    .filter(user => user.role === 'lawyer' || user.role === 'assistant' || user.role === 'admin')
-    .sort((a,b) => b.last_login.getTime() - a.last_login.getTime());
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch team members');
+        }
+        const users: ApiUser[] = await response.json();
+        
+        const sortedUsers = users.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        setTeamMembers(sortedUsers);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   return (
     <Card>
@@ -19,28 +48,49 @@ export function TeamActivity() {
         <CardDescription>A snapshot of recent user logins.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {teamMembers.map(user => {
-            const initials = user.full_name
+        {isLoading && (
+          [...Array(3)].map((_, i) => (
+             <div key={i} className="flex items-center gap-4">
+               <Skeleton className="h-9 w-9 rounded-full" />
+               <div className="flex-1 space-y-1">
+                 <Skeleton className="h-4 w-24" />
+                 <Skeleton className="h-3 w-16" />
+               </div>
+               <div className="text-right">
+                  <Skeleton className="h-4 w-20" />
+               </div>
+             </div>
+          ))
+        )}
+        {!isLoading && error && (
+          <div className="text-destructive text-sm text-center">{error}</div>
+        )}
+        {!isLoading && !error && teamMembers.map(user => {
+            const initials = user.name
                 .split(' ')
                 .map((n) => n[0])
                 .join('');
             
             return (
-                <div key={user.uid} className="flex items-center gap-4">
+                <div key={user.id} className="flex items-center gap-4">
                     <Avatar className="h-9 w-9">
-                        <AvatarImage src={user.profile_pic} alt={user.full_name} data-ai-hint="person face" />
+                        <AvatarImage src={user.photo_url} alt={user.name} data-ai-hint="person face" />
                         <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                        <p className="text-sm font-medium leading-none">{user.full_name}</p>
-                        <p className="text-sm text-muted-foreground capitalize">{user.role}</p>
+                        <p className="text-sm font-medium leading-none">{user.name}</p>
+                        {/* Role is not in API response, so we default it */}
+                        <p className="text-sm text-muted-foreground capitalize">Lawyer</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm font-medium">{formatDistanceToNow(user.last_login, { addSuffix: true })}</p>
+                        <p className="text-sm font-medium">{formatDistanceToNow(new Date(user.updated_at), { addSuffix: true })}</p>
                     </div>
                 </div>
             )
         })}
+         {!isLoading && !error && teamMembers.length === 0 && (
+            <div className="text-center text-muted-foreground py-4">No team members found.</div>
+         )}
       </CardContent>
     </Card>
   );
