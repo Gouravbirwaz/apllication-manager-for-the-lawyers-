@@ -120,7 +120,7 @@ export default function MyClientsPage() {
                                                     <Briefcase className="h-5 w-5 text-primary" />
                                                     <div>
                                                         <p className="font-semibold text-left">{c.title}</p>
-                                                        <p className='text-sm text-muted-foreground text-left'>Status: <Badge variant={c.status === 'closed' ? 'outline' : 'default'} className="capitalize">{c.status}</Badge></p>
+                                                        <div className='text-sm text-muted-foreground text-left'>Status: <Badge variant={c.status === 'closed' ? 'outline' : 'default'} className="capitalize">{c.status}</Badge></div>
                                                     </div>
                                                 </div>
                                             </AccordionTrigger>
