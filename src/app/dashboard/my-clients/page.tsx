@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mockUsers, mockCases, mockHearings } from '@/lib/mock-data';
+import { mockCases, mockHearings } from '@/lib/mock-data';
 import type { User, Case, Hearing } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,45 +11,61 @@ import { Briefcase, Calendar, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MyClientsPage() {
-    const [isClient, setIsClient] = useState(false);
-    const [lawyer, setLawyer] = useState<User | undefined>();
     const [clients, setClients] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // These are still using mock data as per original implementation
     const [clientCases, setClientCases] = useState<Map<string, Case[]>>(new Map());
     const [caseHearings, setCaseHearings] = useState<Map<string, Hearing[]>>(new Map());
-    
+
     useEffect(() => {
-        setIsClient(true);
-        // In a real app, you'd get the logged-in lawyer's ID
-        const currentLawyer = mockUsers.find(u => u.role === 'lawyer');
-        setLawyer(currentLawyer);
+        const fetchClients = async () => {
+            setIsLoading(true);
+            setError(null);
+            try {
+                const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/clients`;
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'ngrok-skip-browser-warning': 'true',
+                    },
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to fetch clients');
+                }
+                const data: User[] = await response.json();
+                setClients(data);
 
-        if (currentLawyer) {
-            const lawyerCaseIds = mockCases.filter(c => c.lawyer_id === currentLawyer.uid).map(c => c.case_id);
-            const lawyerClientIds = new Set(mockCases.filter(c => c.lawyer_id === currentLawyer.uid).map(c => c.client_id));
-            
-            const lawyerClients = mockUsers.filter(u => lawyerClientIds.has(u.uid));
-            setClients(lawyerClients);
+                // This part still uses mock data. In a real app, you would fetch cases and hearings based on client IDs.
+                const casesByClient = new Map<string, Case[]>();
+                const hearingsByCase = new Map<string, Hearing[]>();
+                const currentLawyerId = 'user-lawyer-1'; // Mock lawyer ID
 
-            const casesByClient = new Map<string, Case[]>();
-            lawyerClients.forEach(client => {
-                const casesForClient = mockCases.filter(c => c.client_id === client.uid && c.lawyer_id === currentLawyer.uid);
-                casesByClient.set(client.uid, casesForClient);
-            });
-            setClientCases(casesByClient);
-            
-            const hearingsByCase = new Map<string, Hearing[]>();
-            lawyerCaseIds.forEach(caseId => {
-                const hearings = mockHearings
-                    .filter(h => h.case_id === caseId)
-                    .sort((a,b) => a.date.getTime() - b.date.getTime()); // Sort nearest to farthest
-                hearingsByCase.set(caseId, hearings);
-            });
-            setCaseHearings(caseHearings);
-        }
+                data.forEach(client => {
+                    const casesForClient = mockCases.filter(c => c.client_id === `user-client-${client.id}` && c.lawyer_id === currentLawyerId);
+                    casesByClient.set(String(client.id), casesForClient);
+                    casesForClient.forEach(caseItem => {
+                        const hearings = mockHearings
+                            .filter(h => h.case_id === caseItem.case_id)
+                            .sort((a,b) => a.date.getTime() - b.date.getTime());
+                        hearingsByCase.set(caseItem.case_id, hearings);
+                    });
+                });
+                setClientCases(casesByClient);
+                setCaseHearings(hearingsByCase);
 
+            } catch (err: any) {
+                setError(err.message || 'An unexpected error occurred.');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchClients();
     }, []);
 
-    if (!isClient) {
+    if (isLoading) {
         return (
             <div className="space-y-6">
                 <Card>
@@ -78,6 +94,24 @@ export default function MyClientsPage() {
         )
     }
 
+    if (error) {
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline text-2xl flex items-center gap-2">
+                        <Users /> My Clients
+                    </CardTitle>
+                    <CardDescription>
+                        An overview of your clients and their associated cases.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="p-12 text-center text-destructive">
+                    <p>Error: {error}</p>
+                </CardContent>
+            </Card>
+        )
+    }
+
     return (
         <div className="space-y-6">
             <Card>
@@ -92,18 +126,19 @@ export default function MyClientsPage() {
             </Card>
 
             {clients.length > 0 ? clients.map(client => {
-                const cases = clientCases.get(client.uid) || [];
-                const clientInitials = client.full_name.split(' ').map(n => n[0]).join('');
+                const cases = clientCases.get(String(client.id)) || [];
+                const clientName = client.full_name || 'Unnamed Client';
+                const clientInitials = clientName.split(' ').map(n => n[0]).join('');
 
                 return (
-                    <Card key={client.uid}>
+                    <Card key={client.id}>
                         <CardHeader className="flex flex-row items-center gap-4">
                             <Avatar className="h-12 w-12">
                                 <AvatarImage src={client.profile_pic} />
                                 <AvatarFallback>{clientInitials}</AvatarFallback>
                             </Avatar>
                             <div>
-                                <CardTitle className="text-xl font-headline">{client.full_name}</CardTitle>
+                                <CardTitle className="text-xl font-headline">{clientName}</CardTitle>
                                 <CardDescription>{client.email}</CardDescription>
                             </div>
                         </CardHeader>

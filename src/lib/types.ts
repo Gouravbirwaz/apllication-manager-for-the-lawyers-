@@ -6,11 +6,16 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role?: UserRole; // Role is not in the API response, so make it optional
+  role?: UserRole;
   phone_number?: string;
   created_at: string;
-  photo_url: string;
-  updated_at: string;
+  photo_url?: string;
+  updated_at?: string;
+  full_name?: string; // from client endpoint
+  phone?: string; // from client endpoint
+  address?: string;
+  organization?: string;
+  profile_pic?: string;
 }
 
 export type CaseType = "civil" | "criminal" | "corporate" | "property" | "family";
