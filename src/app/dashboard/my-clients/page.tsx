@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mockCases, mockHearings, mockUsers } from '@/lib/mock-data';
+import { mockHearings } from '@/lib/mock-data';
 import type { User, Case, Hearing } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,51 +15,59 @@ export default function MyClientsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // These are still using mock data as per original implementation
     const [clientCases, setClientCases] = useState<Map<string, Case[]>>(new Map());
     const [caseHearings, setCaseHearings] = useState<Map<string, Hearing[]>>(new Map());
 
     useEffect(() => {
-        const fetchClients = async () => {
+        const fetchClientsAndCases = async () => {
             setIsLoading(true);
             setError(null);
             try {
-                const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/clients`;
-                const response = await fetch(apiUrl, {
+                // 1. Fetch Clients
+                const clientsApiUrl = `/api/clients`;
+                const clientsResponse = await fetch(clientsApiUrl, {
                     headers: {
                         'ngrok-skip-browser-warning': 'true',
                     },
                 });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Failed to fetch clients');
+                if (!clientsResponse.ok) {
+                    throw new Error('Failed to fetch clients');
                 }
-                const data: User[] = await response.json();
-                setClients(data);
+                const clientsData: User[] = await clientsResponse.json();
+                setClients(clientsData);
 
-                // This part still uses mock data. In a real app, you would fetch cases and hearings based on client IDs.
+                // 2. Fetch Cases for each client
                 const casesByClient = new Map<string, Case[]>();
                 const hearingsByCase = new Map<string, Hearing[]>();
-                
-                // Assuming a logged-in lawyer
-                const currentLawyerId = 'user-lawyer-1';
 
-                data.forEach(client => {
-                    // This matching logic is imperfect as client.id is a number and c.client_id is a string like 'user-client-1'
-                    // For demo purposes, we will link some mock cases to the first few clients.
-                    const casesForClient = mockCases.filter(c => c.lawyer_id === currentLawyerId);
-                    
-                    if (casesForClient.length > 0) {
-                      // This is a placeholder logic. In a real app, cases would be fetched per client.
-                      casesByClient.set(String(client.id), casesForClient);
-                      casesForClient.forEach(caseItem => {
-                          const hearings = mockHearings
-                              .filter(h => h.case_id === caseItem.case_id)
-                              .sort((a,b) => a.date.getTime() - b.date.getTime());
-                          hearingsByCase.set(caseItem.case_id, hearings);
-                      });
+                for (const client of clientsData) {
+                    const casesApiUrl = `/api/clients/${client.id}/cases`;
+                    const casesResponse = await fetch(casesApiUrl, {
+                         headers: {
+                            'ngrok-skip-browser-warning': 'true',
+                        },
+                    });
+
+                    if (casesResponse.ok) {
+                        const casesData: any[] = await casesResponse.json();
+                        const processedCases = casesData.map(c => ({
+                            ...c,
+                            case_id: c.id.toString(),
+                            title: c.case_title,
+                            filing_date: new Date(c.created_at),
+                            next_hearing: c.next_hearing ? new Date(c.next_hearing) : undefined,
+                        }));
+                        casesByClient.set(String(client.id), processedCases);
+                        
+                        // This part still uses mock data for hearings.
+                        processedCases.forEach(caseItem => {
+                            const hearings = mockHearings
+                                .filter(h => h.case_id === caseItem.case_id) // This link is weak, needs real data
+                                .sort((a,b) => a.date.getTime() - b.date.getTime());
+                            hearingsByCase.set(caseItem.case_id, hearings);
+                        });
                     }
-                });
+                }
                 setClientCases(casesByClient);
                 setCaseHearings(hearingsByCase);
 
@@ -70,7 +78,7 @@ export default function MyClientsPage() {
             }
         };
 
-        fetchClients();
+        fetchClientsAndCases();
     }, []);
 
     if (isLoading) {

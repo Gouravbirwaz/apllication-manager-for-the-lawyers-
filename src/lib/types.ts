@@ -11,8 +11,8 @@ export interface User {
   created_at: string;
   photo_url?: string;
   updated_at?: string;
-  full_name?: string; // from client endpoint
-  phone?: string; // from client endpoint
+  full_name?: string; 
+  phone?: string;
   address?: string;
   organization?: string;
   profile_pic?: string;
@@ -21,15 +21,16 @@ export interface User {
   last_login?: Date;
 }
 
-export type CaseType = "civil" | "criminal" | "corporate" | "property" | "family";
+export type CaseType = "civil" | "criminal" | "corporate" | "property" | "family" | "Civil";
 export type CaseStatus = "open" | "in-progress" | "closed";
 
 export interface Case {
-  case_id: string;
+  case_id: string; // This will map to `id` from the API
+  id: number;
   title: string;
   case_type: CaseType;
   status: CaseStatus;
-  lawyer_id: string; // This would map to a user's ID
+  lawyer_id: string; // This might not be in the case response, needs clarification
   client_id: string; // This would map to a user's ID
   court_name: string;
   filing_date: Date;
@@ -37,6 +38,7 @@ export interface Case {
   description: string;
   created_at: Date;
   last_updated: Date;
+  case_title?: string;
 }
 
 export interface Document {
