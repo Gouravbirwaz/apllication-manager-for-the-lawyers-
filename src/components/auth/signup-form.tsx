@@ -27,13 +27,13 @@ export function SignUpForm() {
     }
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/signup`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/post/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: fullName, // Changed from username to name
+          name: fullName,
           email,
           password,
           phone_number: phoneNumber,
