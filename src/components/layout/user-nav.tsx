@@ -28,7 +28,11 @@ export function UserNav() {
       try {
         // Assuming the first user is the logged-in user for this example
         const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`;
-        const response = await fetch(apiUrl);
+        const response = await fetch(apiUrl, {
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+          },
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch user');
         }

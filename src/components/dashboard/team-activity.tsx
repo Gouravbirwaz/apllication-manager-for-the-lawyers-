@@ -17,7 +17,11 @@ export function TeamActivity() {
     const fetchUsers = async () => {
       try {
         const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`;
-        const response = await fetch(apiUrl);
+        const response = await fetch(apiUrl, {
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+          },
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch team members');
         }
