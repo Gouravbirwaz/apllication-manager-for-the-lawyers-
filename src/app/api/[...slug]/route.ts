@@ -2,17 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-async function handler(req: NextRequest) {
+async function handler(req: NextRequest, { params }: { params: { slug: string[] } }) {
   if (!apiBaseUrl) {
     return new NextResponse('API base URL is not configured', { status: 500 });
   }
 
-  // Extract the path from the request URL
-  const path = req.nextUrl.pathname.replace(/^\/api/, '');
-  const url = new URL(path + req.nextUrl.search, apiBaseUrl);
+  const path = params.slug.join('/');
+  const url = new URL(path, apiBaseUrl);
+  url.search = req.nextUrl.search;
 
   const headers = new Headers(req.headers);
-  headers.delete('host');
+  headers.set('host', url.host);
 
   try {
     const response = await fetch(url.toString(), {
@@ -24,11 +24,7 @@ async function handler(req: NextRequest) {
       redirect: 'manual',
     });
 
-    return new NextResponse(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: new Headers(response.headers),
-    });
+    return response;
   } catch (error) {
     console.error('API proxy error:', error);
     return new NextResponse('API proxy error', { status: 502 });
