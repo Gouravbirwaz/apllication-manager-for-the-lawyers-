@@ -7,8 +7,7 @@ async function handler(req: NextRequest) {
     return new NextResponse('API base URL is not configured', {status: 500});
   }
 
-  const slug = req.nextUrl.pathname.replace('/api/', '');
-  const url = `${apiBaseUrl}/${slug}${req.nextUrl.search}`;
+  const url = `${apiBaseUrl}/get/all_users`;
 
   const headers = new Headers(req.headers);
   headers.delete('host'); // Let node-fetch set the host header
