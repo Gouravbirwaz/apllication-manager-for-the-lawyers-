@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mockCases, mockHearings } from '@/lib/mock-data';
+import { mockCases, mockHearings, mockUsers } from '@/lib/mock-data';
 import type { User, Case, Hearing } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -40,17 +40,25 @@ export default function MyClientsPage() {
                 // This part still uses mock data. In a real app, you would fetch cases and hearings based on client IDs.
                 const casesByClient = new Map<string, Case[]>();
                 const hearingsByCase = new Map<string, Hearing[]>();
-                const currentLawyerId = 'user-lawyer-1'; // Mock lawyer ID
+                
+                // Assuming a logged-in lawyer
+                const currentLawyerId = 'user-lawyer-1';
 
                 data.forEach(client => {
-                    const casesForClient = mockCases.filter(c => c.client_id === `user-client-${client.id}` && c.lawyer_id === currentLawyerId);
-                    casesByClient.set(String(client.id), casesForClient);
-                    casesForClient.forEach(caseItem => {
-                        const hearings = mockHearings
-                            .filter(h => h.case_id === caseItem.case_id)
-                            .sort((a,b) => a.date.getTime() - b.date.getTime());
-                        hearingsByCase.set(caseItem.case_id, hearings);
-                    });
+                    // This matching logic is imperfect as client.id is a number and c.client_id is a string like 'user-client-1'
+                    // For demo purposes, we will link some mock cases to the first few clients.
+                    const casesForClient = mockCases.filter(c => c.lawyer_id === currentLawyerId);
+                    
+                    if (casesForClient.length > 0) {
+                      // This is a placeholder logic. In a real app, cases would be fetched per client.
+                      casesByClient.set(String(client.id), casesForClient);
+                      casesForClient.forEach(caseItem => {
+                          const hearings = mockHearings
+                              .filter(h => h.case_id === caseItem.case_id)
+                              .sort((a,b) => a.date.getTime() - b.date.getTime());
+                          hearingsByCase.set(caseItem.case_id, hearings);
+                      });
+                    }
                 });
                 setClientCases(casesByClient);
                 setCaseHearings(hearingsByCase);

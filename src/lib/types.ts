@@ -16,6 +16,9 @@ export interface User {
   address?: string;
   organization?: string;
   profile_pic?: string;
+  uid?: string;
+  bar_id?: string;
+  last_login?: Date;
 }
 
 export type CaseType = "civil" | "criminal" | "corporate" | "property" | "family";
