@@ -42,6 +42,7 @@ export interface Document {
   uploaded_at: Date;
   version: number;
   summary?: string;
+  case_title?: string;
 }
 
 export interface Hearing {

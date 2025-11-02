@@ -94,6 +94,7 @@ export const mockDocuments: Document[] = [
   {
     doc_id: 'doc-001',
     case_id: 'case-001',
+    case_title: 'Mehta v. Sharma',
     uploaded_by: 'user-assistant-1',
     title: 'Initial Complaint Filing',
     file_url: '#',
@@ -105,22 +106,38 @@ export const mockDocuments: Document[] = [
   {
     doc_id: 'doc-002',
     case_id: 'case-001',
+    case_title: 'Mehta v. Sharma',
     uploaded_by: 'user-client-1',
     title: 'Evidence Exhibit A',
     file_url: '#',
     file_type: 'image',
     uploaded_at: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000),
     version: 1,
+    summary: 'Exhibit A contains photographic evidence of the infringing product being sold in retail stores. Timestamps and location data are included on the photographs.'
   },
   {
     doc_id: 'doc-003',
     case_id: 'case-002',
+    case_title: 'State v. Gupta',
     uploaded_by: 'user-lawyer-1',
     title: 'Motion to Dismiss',
     file_url: '#',
     file_type: 'docx',
     uploaded_at: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
     version: 2,
+    summary: 'The motion to dismiss argues that the prosecution has failed to establish a prima facie case against Mr. Gupta. It cites lack of direct evidence and procedural errors during the investigation.'
+  },
+  {
+    doc_id: 'doc-004',
+    case_id: 'case-002',
+    case_title: 'State v. Gupta',
+    uploaded_by: 'user-assistant-1',
+    title: 'Witness Testimony - A. Verma',
+    file_url: '#',
+    file_type: 'pdf',
+    uploaded_at: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+    version: 1,
+    summary: 'Transcript of the testimony of witness Anjali Verma, a former employee of the defendant\'s company. The testimony provides details about the company\'s financial practices during the period in question.'
   },
 ];
 
