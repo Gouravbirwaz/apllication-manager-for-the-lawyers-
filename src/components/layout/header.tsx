@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Briefcase,
   CalendarDays,
@@ -6,7 +9,8 @@ import {
   ListTodo,
   PanelLeft,
   Search,
-  Bot
+  Bot,
+  Users,
 } from 'lucide-react';
 import {
   Breadcrumb,
@@ -21,8 +25,66 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { UserNav } from './user-nav';
 import { AshokaChakraIcon } from '../icons/ashoka-chakra-icon';
+import { useEffect, useState } from 'react';
+
+const breadcrumbLabels: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/dashboard/cases': 'All Cases',
+  '/dashboard/my-clients': 'My Clients',
+  '/dashboard/tasks': 'Tasks',
+  '/dashboard/hearings': 'Hearings',
+  '/dashboard/ask-bot': 'Legal Bot',
+};
 
 export function AppHeader() {
+  const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const getBreadcrumb = () => {
+    const pathParts = pathname.split('/').filter(p => p);
+    
+    if (pathParts.length === 1 && pathParts[0] === 'dashboard') {
+      return <BreadcrumbPage>Dashboard</BreadcrumbPage>;
+    }
+    
+    if (pathParts.length > 1) {
+       const currentPagePath = `/${pathParts.join('/')}`;
+       if(pathParts[1] === 'cases' && pathParts.length > 2) {
+          return <>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/dashboard/cases">All Cases</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Case Details</BreadcrumbPage>
+            </BreadcrumbItem>
+          </>;
+       }
+       
+       const pageName = breadcrumbLabels[currentPagePath] || pathParts[pathParts.length - 1].replace(/-/g, ' ');
+       return <>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link href="/dashboard">Dashboard</Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage className="capitalize">{pageName}</BreadcrumbPage>
+        </BreadcrumbItem>
+      </>;
+    }
+
+    return <BreadcrumbPage>Dashboard</BreadcrumbPage>
+  }
+
+
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
       <Sheet>
@@ -55,6 +117,13 @@ export function AppHeader() {
               <Briefcase className="h-5 w-5" />
               Cases
             </Link>
+             <Link
+              href="/dashboard/my-clients"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <Users className="h-5 w-5" />
+              My Clients
+            </Link>
             <Link
               href="/dashboard/tasks"
               className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
@@ -81,17 +150,7 @@ export function AppHeader() {
       </Sheet>
       <Breadcrumb className="hidden md:flex">
         <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/dashboard">Dashboard</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>
-              All Cases
-            </BreadcrumbPage>
-          </BreadcrumbItem>
+          {isClient && getBreadcrumb()}
         </BreadcrumbList>
       </Breadcrumb>
       <div className="relative ml-auto flex-1 md:grow-0">

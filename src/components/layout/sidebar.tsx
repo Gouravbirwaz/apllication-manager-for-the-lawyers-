@@ -9,6 +9,7 @@ import {
   ListTodo,
   Settings,
   Bot,
+  Users,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -22,6 +23,7 @@ import { AshokaChakraIcon } from '@/components/icons/ashoka-chakra-icon';
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/cases', icon: Briefcase, label: 'Cases' },
+  { href: '/dashboard/my-clients', icon: Users, label: 'My Clients' },
   { href: '/dashboard/tasks', icon: ListTodo, label: 'Tasks' },
   { href: '/dashboard/hearings', icon: CalendarDays, label: 'Hearings' },
   { href: '/dashboard/ask-bot', icon: Bot, label: 'Legal Bot' },
