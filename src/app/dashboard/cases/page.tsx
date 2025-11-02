@@ -5,17 +5,61 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from './components/data-table';
 import { columns } from './components/columns';
-import { mockCases } from '@/lib/mock-data';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { Case } from '@/lib/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+
+// Minimal components to avoid full import during skeleton load
+const Table = ({className, ...props}: React.HTMLAttributes<HTMLTableElement>) => <table className={className} {...props} />
+const TableHeader = ({className, ...props}: React.HTMLAttributes<HTMLTableSectionElement>) => <thead className={className} {...props} />
+const TableBody = ({className, ...props}: React.HTMLAttributes<HTMLTableSectionElement>) => <tbody className={className} {...props} />
+const TableRow = ({className, ...props}: React.HTMLAttributes<HTMLTableRowElement>) => <tr className={className} {...props} />
+const TableHead = ({className, ...props}: React.HTMLAttributes<HTMLTableCellElement>) => <th className={className} {...props} />
+const TableCell = ({className, ...props}: React.HTMLAttributes<HTMLTableCellElement>) => <td className={className} {...props} />
 
 export default function CasesPage() {
-  const [isClient, setIsClient] = useState(false);
+  const [cases, setCases] = useState<Case[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsClient(true);
+    const fetchCases = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/with-clients`;
+        const response = await fetch(apiUrl, {
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch cases. Status: ${response.status}`);
+        }
+        const data: any[] = await response.json();
+
+        // Data transformation to match frontend types
+        const transformedCases: Case[] = data.map(c => ({
+          ...c,
+          case_id: c.id.toString(), // For component key and linking
+          title: c.case_title, // For Data Table search
+          next_hearing: c.next_hearing ? new Date(c.next_hearing) : undefined,
+          filing_date: new Date(c.created_at)
+        }));
+        
+        setCases(transformedCases);
+      } catch (err: any) {
+        setError(err.message || 'An unexpected error occurred.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCases();
   }, []);
 
-  if (!isClient) {
+  if (isLoading) {
     return (
        <Card>
         <CardHeader>
@@ -73,16 +117,16 @@ export default function CasesPage() {
         </div>
       </CardHeader>
       <CardContent>
-        <DataTable columns={columns} data={mockCases} />
+        {error ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : (
+          <DataTable columns={columns} data={cases} />
+        )}
       </CardContent>
     </Card>
   );
 }
-
-// Minimal components to avoid full import during skeleton load
-const Table = ({className, ...props}: React.HTMLAttributes<HTMLTableElement>) => <table className={className} {...props} />
-const TableHeader = ({className, ...props}: React.HTMLAttributes<HTMLTableSectionElement>) => <thead className={className} {...props} />
-const TableBody = ({className, ...props}: React.HTMLAttributes<HTMLTableSectionElement>) => <tbody className={className} {...props} />
-const TableRow = ({className, ...props}: React.HTMLAttributes<HTMLTableRowElement>) => <tr className={className} {...props} />
-const TableHead = ({className, ...props}: React.HTMLAttributes<HTMLTableCellElement>) => <th className={className} {...props} />
-const TableCell = ({className, ...props}: React.HTMLAttributes<HTMLTableCellElement>) => <td className={className} {...props} />

@@ -15,12 +15,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { Case } from "@/lib/types"
-import { mockUsers } from "@/lib/mock-data"
 import Link from "next/link"
 
 export const columns: ColumnDef<Case>[] = [
   {
-    accessorKey: "title",
+    accessorKey: "case_title",
     header: ({ column }) => {
       return (
         <Button
@@ -33,8 +32,8 @@ export const columns: ColumnDef<Case>[] = [
       )
     },
     cell: ({ row }) => (
-      <Link href={`/dashboard/cases/${row.original.case_id}`}>
-        <div className="font-medium text-primary hover:underline">{row.getValue("title")}</div>
+      <Link href={`/dashboard/cases/${row.original.id}`}>
+        <div className="font-medium text-primary hover:underline">{row.getValue("case_title")}</div>
       </Link>
     ),
   },
@@ -53,11 +52,10 @@ export const columns: ColumnDef<Case>[] = [
     cell: ({ row }) => <div className="capitalize">{row.getValue("case_type")}</div>
   },
   {
-    accessorKey: "client_id",
+    accessorKey: "client",
     header: "Client",
     cell: ({ row }) => {
-      // This is using mock data. In a real app, you'd fetch this.
-      const client = mockUsers.find(u => u.uid === row.getValue("client_id"));
+      const client = row.getValue("client") as Case['client'];
       return <div>{client?.full_name || 'N/A'}</div>;
     },
   },
@@ -65,8 +63,10 @@ export const columns: ColumnDef<Case>[] = [
     accessorKey: "next_hearing",
     header: "Next Hearing",
     cell: ({ row }) => {
-      const date = row.getValue("next_hearing") as Date | undefined;
-      return <div>{date ? date.toLocaleDateString() : 'N/A'}</div>
+      const dateString = row.getValue("next_hearing") as string | undefined;
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return <div>{date.toLocaleDateString()}</div>
     }
   },
   {
@@ -84,11 +84,11 @@ export const columns: ColumnDef<Case>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <Link href={`/dashboard/cases/${caseData.case_id}`}>
+            <Link href={`/dashboard/cases/${caseData.id}`}>
                 <DropdownMenuItem>View details</DropdownMenuItem>
             </Link>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(caseData.case_id)}
+              onClick={() => navigator.clipboard.writeText(String(caseData.id))}
             >
               Copy case ID
             </DropdownMenuItem>

@@ -4,41 +4,37 @@ export type UserRole = "lawyer" | "client" | "assistant" | "admin";
 
 export interface User {
   id: number;
-  name: string;
+  full_name: string;
   email: string;
-  role?: UserRole;
-  phone_number?: string;
-  created_at: string;
-  photo_url?: string;
-  updated_at?: string;
-  full_name?: string; 
-  phone?: string;
-  address?: string;
+  phone: string;
+  address: string;
   organization?: string;
+  created_at: string;
+  updated_at: string;
+  // Fields from old mock data, can be cleaned up later
+  role?: UserRole;
+  photo_url?: string;
   profile_pic?: string;
   uid?: string;
   bar_id?: string;
   last_login?: Date;
+  name?: string;
 }
 
 export type CaseType = "civil" | "criminal" | "corporate" | "property" | "family" | "Civil";
 export type CaseStatus = "open" | "in-progress" | "closed";
 
 export interface Case {
-  case_id: string; // This will map to `id` from the API
   id: number;
-  title: string;
+  case_title: string;
   case_type: CaseType;
   status: CaseStatus;
-  lawyer_id: string; // This might not be in the case response, needs clarification
-  client_id: string; // This would map to a user's ID
-  court_name: string;
-  filing_date: Date;
-  next_hearing?: Date;
-  description: string;
-  created_at: Date;
-  last_updated: Date;
-  case_title?: string;
+  next_hearing?: string;
+  created_at: string;
+  updated_at: string;
+  client: User;
+  case_id: string; // for compatibility with existing components
+  title: string; // for compatibility with existing components
 }
 
 export interface Document {
