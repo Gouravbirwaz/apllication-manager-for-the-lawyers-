@@ -29,12 +29,14 @@ export interface Case {
   case_title: string;
   case_type: CaseType;
   status: CaseStatus;
-  next_hearing?: string;
+  next_hearing?: Date;
   created_at: string;
   updated_at: string;
   client: User;
   case_id: string; // for compatibility with existing components
   title: string; // for compatibility with existing components
+  filing_date: Date; // for compatibility
+  description?: string;
 }
 
 export interface Document {

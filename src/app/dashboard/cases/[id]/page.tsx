@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockCases, mockDocuments, mockHearings, mockTasks, mockUsers } from "@/lib/mock-data";
+import { mockHearings, mockTasks } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FilePlus2, Upload, CalendarPlus, Wand2, PlusCircle, Video } from "lucide-react";
@@ -25,42 +25,105 @@ import { DocumentAnalysis } from "@/components/document-analysis";
 import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
 import { UploadDocumentDialog } from "@/components/documents/upload-document-dialog";
-import type { Hearing, Document, Task } from "@/lib/types";
+import type { Hearing, Document, Task, Case, User } from "@/lib/types";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeLegalDocumentAction } from "@/app/actions";
 import type { LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
 import { AddTaskDialog } from "@/components/tasks/add-task-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+
+function CaseDetailSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div>
+                <Skeleton className="h-9 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/4" />
+            </div>
+            <Skeleton className="h-10 w-full max-w-md" />
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-7 w-48" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-5 w-full max-w-sm" />)}
+                    </div>
+                    <div>
+                        <Skeleton className="h-5 w-24 mb-2" />
+                        <Skeleton className="h-12 w-full" />
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
 
 export default function CaseDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const [caseData, setCaseData] = useState<Case | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const caseData = mockCases.find((c) => c.case_id === id);
-
-  if (!caseData) {
-    notFound();
-  }
+  const [caseDocs, setCaseDocs] = useState<Document[]>([]);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   
-  const client = mockUsers.find((u) => u.uid === caseData.client_id);
-  const lawyer = mockUsers.find((u) => u.uid === caseData.lawyer_id);
-  
-  const initialCaseDocs = mockDocuments.filter((d) => d.case_id === caseData.case_id);
-  const [caseDocs, setCaseDocs] = useState<Document[]>(initialCaseDocs);
-  const [selectedDocId, setSelectedDocId] = useState<string | null>(initialCaseDocs[0]?.doc_id || null);
-  
-  const [caseHearings, setCaseHearings] = useState<Hearing[]>(mockHearings.filter((h) => h.case_id === caseData.case_id));
-  const [caseTasks, setCaseTasks] = useState<Task[]>(mockTasks.filter((t) => t.case_id === caseData.case_id));
+  // Hearings and Tasks will still use mock data for now
+  const [caseHearings, setCaseHearings] = useState<Hearing[]>([]);
+  const [caseTasks, setCaseTasks] = useState<Task[]>([]);
 
   const [analysis, setAnalysis] = useState<LegalDocumentAnalysisOutput | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+  
+  useEffect(() => {
+    if (!id) return;
+    
+    const fetchCaseDetails = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${id}`;
+            const response = await fetch(apiUrl, {
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+            });
+            if (response.status === 404) {
+                 notFound();
+                 return;
+            }
+            if (!response.ok) {
+                throw new Error(`Failed to fetch case details. Status: ${response.status}`);
+            }
+            const data = await response.json();
+             const transformedCase: Case = {
+                ...data,
+                case_id: data.id.toString(),
+                title: data.case_title,
+                filing_date: new Date(data.created_at),
+                next_hearing: data.next_hearing ? new Date(data.next_hearing) : undefined,
+            };
+            setCaseData(transformedCase);
+
+            // TODO: Replace with real endpoints when available
+            setCaseHearings(mockHearings.filter(h => h.case_id === transformedCase.case_id));
+            setCaseTasks(mockTasks.filter(t => t.case_id === transformedCase.case_id));
+
+        } catch (err: any) {
+            setError(err.message || 'An unexpected error occurred.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    fetchCaseDetails();
+  }, [id]);
+
 
   const handleHearingScheduled = (newHearing: Hearing) => {
     setCaseHearings(prev => [...prev, newHearing].sort((a,b) => b.date.getTime() - a.date.getTime()));
@@ -119,7 +182,7 @@ export default function CaseDetailPage() {
   }
 
   const handleScheduleMeeting = () => {
-    if (!client || !lawyer) return;
+    if (!caseData?.client || !caseData.client.email) return;
 
     const eventTitle = `Meeting: ${caseData.title}`;
     const eventDetails = `Discussion regarding case: ${caseData.title}\nCase ID: ${caseData.case_id}`;
@@ -128,11 +191,31 @@ export default function CaseDetailPage() {
     url.searchParams.set('action', 'TEMPLATE');
     url.searchParams.set('text', eventTitle);
     url.searchParams.set('details', eventDetails);
-    url.searchParams.set('add', `${client.email},${lawyer.email}`);
+    url.searchParams.set('add', `${caseData.client.email}`);
     url.searchParams.set('crm', 'true'); // Automatically add conference call (Google Meet)
 
     window.open(url.toString(), '_blank');
   };
+
+  if (isLoading) {
+    return <CaseDetailSkeleton />;
+  }
+
+  if (error) {
+     return (
+        <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error Loading Case</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+        </Alert>
+     )
+  }
+
+  if (!caseData) {
+    // This should ideally not be reached if loading and error states are handled,
+    // but it's a good fallback.
+    return notFound();
+  }
 
   return (
     <div className="space-y-6">
@@ -157,14 +240,14 @@ export default function CaseDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
-                  <strong>Client:</strong> {client?.full_name}
+                  <strong>Client:</strong> {caseData.client?.full_name}
                   <Button variant="outline" size="sm" onClick={handleScheduleMeeting}>
                     <Video className="mr-2 h-4 w-4" /> Schedule Meeting
                   </Button>
                 </div>
-                <div><strong>Lead Lawyer:</strong> {lawyer?.full_name}</div>
-                <div><strong>Court:</strong> {caseData.court_name}</div>
-                <div><strong>Filing Date:</strong> {isClient ? caseData.filing_date.toLocaleDateString() : '...'}</div>
+                {/* <div><strong>Lead Lawyer:</strong> {lawyer?.full_name}</div> */}
+                {/* <div><strong>Court:</strong> {caseData.court_name}</div> */}
+                <div><strong>Filing Date:</strong> {caseData.filing_date.toLocaleDateString()}</div>
                 <div>
                   <strong>Status:</strong> <Badge variant={caseData.status === 'closed' ? 'outline' : 'default'} className="capitalize">{caseData.status}</Badge>
                 </div>
@@ -174,7 +257,7 @@ export default function CaseDetailPage() {
               </div>
               <div>
                 <h4 className="font-semibold mb-2">Description</h4>
-                <p className="text-muted-foreground">{caseData.description}</p>
+                <p className="text-muted-foreground">{caseData.description || 'No description provided.'}</p>
               </div>
             </CardContent>
           </Card>
@@ -222,7 +305,7 @@ export default function CaseDetailPage() {
                              <Label htmlFor={doc.doc_id} className="cursor-pointer">{doc.title}</Label>
                           </TableCell>
                           <TableCell className="uppercase">{doc.file_type}</TableCell>
-                          <TableCell>{isClient ? doc.uploaded_at.toLocaleDateString() : '...'}</TableCell>
+                          <TableCell>{doc.uploaded_at.toLocaleDateString()}</TableCell>
                           <TableCell>{doc.version}</TableCell>
                           <TableCell className="text-muted-foreground text-sm truncate max-w-xs">{doc.summary || 'N/A'}</TableCell>
                         </TableRow>
@@ -287,8 +370,8 @@ export default function CaseDetailPage() {
                   <TableBody>
                     {caseHearings.map(hearing => (
                        <TableRow key={hearing.hearing_id}>
-                        <TableCell>{isClient ? hearing.date.toLocaleDateString() : '...'}</TableCell>
-                        <TableCell>{isClient ? hearing.date.toLocaleTimeString() : '...'}</TableCell>
+                        <TableCell>{hearing.date.toLocaleDateString()}</TableCell>
+                        <TableCell>{hearing.date.toLocaleTimeString()}</TableCell>
                         <TableCell>{hearing.court_room}</TableCell>
                         <TableCell>{hearing.remarks}</TableCell>
                       </TableRow>
@@ -310,8 +393,8 @@ export default function CaseDetailPage() {
           <Card>
               <CardHeader className="flex flex-row justify-between items-center">
                 <CardTitle className="font-headline">Associated Tasks</CardTitle>
-                <AddTaskDialog 
-                  cases={mockCases}
+                {/* <AddTaskDialog 
+                  cases={[caseData]}
                   onTaskAdded={handleTaskAdded}
                   defaultCaseId={id}
                 >
@@ -319,7 +402,7 @@ export default function CaseDetailPage() {
                     <PlusCircle className="mr-2 h-4 w-4"/>
                     Add Task
                   </Button>
-                </AddTaskDialog>
+                </AddTaskDialog> */}
               </CardHeader>
               <CardContent>
                  <Table>
@@ -338,7 +421,7 @@ export default function CaseDetailPage() {
                        <TableRow key={task.task_id}>
                         <TableCell>{task.title}</TableCell>
                         <TableCell>{assignee?.full_name}</TableCell>
-                        <TableCell>{isClient ? task.due_date.toLocaleDateString() : '...'}</TableCell>
+                        <TableCell>{task.due_date.toLocaleDateString()}</TableCell>
                         <TableCell>
                           <Badge variant={task.status === 'done' ? 'outline' : 'default'} className="capitalize">{task.status}</Badge>
                         </TableCell>
