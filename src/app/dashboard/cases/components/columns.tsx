@@ -56,6 +56,7 @@ export const columns: ColumnDef<Case>[] = [
     accessorKey: "client_id",
     header: "Client",
     cell: ({ row }) => {
+      // This is using mock data. In a real app, you'd fetch this.
       const client = mockUsers.find(u => u.uid === row.getValue("client_id"));
       return <div>{client?.full_name || 'N/A'}</div>;
     },

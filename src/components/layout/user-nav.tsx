@@ -16,16 +16,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { Skeleton } from '../ui/skeleton';
+import type { User } from '@/lib/types';
 
-interface ApiUser {
-  id: number;
-  name: string;
-  email: string;
-  photo_url: string;
-}
 
 export function UserNav() {
-  const [user, setUser] = useState<ApiUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -35,7 +30,7 @@ export function UserNav() {
         if (!response.ok) {
           throw new Error('Failed to fetch user');
         }
-        const users: ApiUser[] = await response.json();
+        const users: User[] = await response.json();
         if (users.length > 0) {
           setUser(users[0]); // Assuming the first user is the logged-in user
         }

@@ -33,7 +33,7 @@ export function SignUpForm() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: fullName,
+          name: fullName, // Changed from username to name
           email,
           password,
           phone_number: phoneNumber,
@@ -77,6 +77,7 @@ export function SignUpForm() {
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           disabled={isLoading}
+          suppressHydrationWarning
         />
       </div>
       <div className="grid gap-2">
@@ -89,6 +90,7 @@ export function SignUpForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={isLoading}
+          suppressHydrationWarning
         />
       </div>
        <div className="grid gap-2">
@@ -100,6 +102,7 @@ export function SignUpForm() {
           value={phoneNumber}
           onChange={(e) => setPhoneNumber(e.target.value)}
           disabled={isLoading}
+          suppressHydrationWarning
         />
       </div>
       <div className="grid gap-2">
@@ -111,9 +114,10 @@ export function SignUpForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={isLoading}
+          suppressHydrationWarning
         />
       </div>
-      <Button onClick={handleSignUp} disabled={isLoading} type="submit" className="w-full">
+      <Button onClick={handleSignUp} disabled={isLoading} type="submit" className="w-full" suppressHydrationWarning>
         {isLoading ? 'Creating Account...' : 'Create an account'}
       </Button>
     </div>

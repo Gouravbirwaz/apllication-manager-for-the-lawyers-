@@ -6,17 +6,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
+import type { User } from '@/lib/types';
 
-interface ApiUser {
-  id: number;
-  name: string;
-  email: string;
-  photo_url: string;
-  updated_at: string;
-}
 
 export function TeamActivity() {
-  const [teamMembers, setTeamMembers] = useState<ApiUser[]>([]);
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +21,7 @@ export function TeamActivity() {
         if (!response.ok) {
           throw new Error('Failed to fetch team members');
         }
-        const users: ApiUser[] = await response.json();
+        const users: User[] = await response.json();
         
         const sortedUsers = users.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
         setTeamMembers(sortedUsers);

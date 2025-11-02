@@ -65,6 +65,7 @@ export function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={isLoading}
+          suppressHydrationWarning
         />
       </div>
       <div className="grid gap-2">
@@ -81,9 +82,10 @@ export function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={isLoading}
+          suppressHydrationWarning
         />
       </div>
-      <Button onClick={handleSignIn} disabled={isLoading} className="w-full">
+      <Button onClick={handleSignIn} disabled={isLoading} className="w-full" suppressHydrationWarning>
         {isLoading ? 'Signing In...' : 'Sign In'}
       </Button>
     </div>

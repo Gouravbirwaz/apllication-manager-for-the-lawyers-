@@ -3,15 +3,14 @@ import type { Timestamp } from "firebase/firestore";
 export type UserRole = "lawyer" | "client" | "assistant" | "admin";
 
 export interface User {
-  uid: string;
-  full_name: string;
+  id: number;
+  name: string;
   email: string;
-  role: UserRole;
-  phone?: string;
-  bar_id?: string;
-  created_at: Date;
-  profile_pic: string;
-  last_login: Date;
+  role?: UserRole; // Role is not in the API response, so make it optional
+  phone_number?: string;
+  created_at: string;
+  photo_url: string;
+  updated_at: string;
 }
 
 export type CaseType = "civil" | "criminal" | "corporate" | "property" | "family";
@@ -22,8 +21,8 @@ export interface Case {
   title: string;
   case_type: CaseType;
   status: CaseStatus;
-  lawyer_id: string; // Reference to users.uid
-  client_id: string; // Reference to users.uid
+  lawyer_id: string; // This would map to a user's ID
+  client_id: string; // This would map to a user's ID
   court_name: string;
   filing_date: Date;
   next_hearing?: Date;
