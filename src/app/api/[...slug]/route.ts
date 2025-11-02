@@ -1,33 +1,52 @@
-import { NextRequest, NextResponse } from 'next/server';
+import {NextRequest, NextResponse} from 'next/server';
+import {headers} from 'next/headers';
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+// Hardcoding the base URL to eliminate environment variable issues.
+const apiBaseUrl = 'https://unengaged-slatier-anibal.ngrok-free.dev';
 
-async function handler(req: NextRequest, { params }: { params: { slug: string[] } }) {
+async function handler(req: NextRequest) {
+  const {pathname, search} = req.nextUrl;
+  const path = pathname.replace(/^\/api/, '');
+
   if (!apiBaseUrl) {
-    return new NextResponse('API base URL is not configured', { status: 500 });
+    return new NextResponse('API base URL is not configured', {status: 500});
   }
 
-  const path = params.slug.join('/');
-  const url = new URL(path, apiBaseUrl);
-  url.search = req.nextUrl.search;
+  const url = `${apiBaseUrl}${path}${search}`;
 
-  const headers = new Headers(req.headers);
-  headers.set('host', url.host);
+  const requestHeaders = new Headers(req.headers);
+
+  // Ensure the host header is set to the target backend's host
+  const parsedUrl = new URL(url);
+  requestHeaders.set('host', parsedUrl.host);
 
   try {
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: req.method,
-      headers,
+      headers: requestHeaders,
       body: req.body,
       // @ts-ignore
       duplex: 'half',
       redirect: 'manual',
     });
 
-    return response;
+    const responseHeaders = new Headers(response.headers);
+
+    // Forward the Set-Cookie header from the backend to the client
+    const setCookie = response.headers.get('Set-Cookie');
+    if (setCookie) {
+      responseHeaders.set('Set-Cookie', setCookie);
+    }
+    
+    return new NextResponse(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders,
+    });
+
   } catch (error) {
     console.error('API proxy error:', error);
-    return new NextResponse('API proxy error', { status: 502 });
+    return new NextResponse('API proxy error', {status: 502});
   }
 }
 
