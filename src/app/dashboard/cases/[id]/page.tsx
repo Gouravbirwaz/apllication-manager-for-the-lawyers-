@@ -20,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockCases, mockDocuments, mockHearings, mockTasks, mockUsers } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FilePlus2, Upload, CalendarPlus, Wand2, PlusCircle } from "lucide-react";
+import { FilePlus2, Upload, CalendarPlus, Wand2, PlusCircle, Video } from "lucide-react";
 import { DocumentAnalysis } from "@/components/document-analysis";
 import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
@@ -118,6 +118,22 @@ export default function CaseDetailPage() {
     }
   }
 
+  const handleScheduleMeeting = () => {
+    if (!client || !lawyer) return;
+
+    const eventTitle = `Meeting: ${caseData.title}`;
+    const eventDetails = `Discussion regarding case: ${caseData.title}\nCase ID: ${caseData.case_id}`;
+    
+    const url = new URL('https://calendar.google.com/calendar/render');
+    url.searchParams.set('action', 'TEMPLATE');
+    url.searchParams.set('text', eventTitle);
+    url.searchParams.set('details', eventDetails);
+    url.searchParams.set('add', `${client.email},${lawyer.email}`);
+    url.searchParams.set('crm', 'true'); // Automatically add conference call (Google Meet)
+
+    window.open(url.toString(), '_blank');
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -140,7 +156,12 @@ export default function CaseDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><strong>Client:</strong> {client?.full_name}</div>
+                <div className="flex items-center gap-2">
+                  <strong>Client:</strong> {client?.full_name}
+                  <Button variant="outline" size="sm" onClick={handleScheduleMeeting}>
+                    <Video className="mr-2 h-4 w-4" /> Schedule Meeting
+                  </Button>
+                </div>
                 <div><strong>Lead Lawyer:</strong> {lawyer?.full_name}</div>
                 <div><strong>Court:</strong> {caseData.court_name}</div>
                 <div><strong>Filing Date:</strong> {isClient ? caseData.filing_date.toLocaleDateString() : '...'}</div>
