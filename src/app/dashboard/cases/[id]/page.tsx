@@ -25,16 +25,18 @@ import { DocumentAnalysis } from "@/components/document-analysis";
 import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
 import { UploadDocumentDialog } from "@/components/documents/upload-document-dialog";
-import type { Hearing, Document, Task, Case, User } from "@/lib/types";
+import type { Hearing, Document, Task, Case, User, CaseStatus } from "@/lib/types";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { analyzeLegalDocumentAction } from "@/app/actions";
+import { analyzeLegalDocumentAction, updateCaseStatusAction } from "@/app/actions";
 import type { LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
 import { AddTaskDialog } from "@/components/tasks/add-task-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 function CaseDetailSkeleton() {
     return (
@@ -213,6 +215,27 @@ export default function CaseDetailPage() {
     window.open(url.toString(), '_blank');
   };
 
+  const handleStatusChange = async (newStatus: CaseStatus) => {
+    if (!caseData) return;
+    
+    const result = await updateCaseStatusAction(caseData.case_id, newStatus);
+    
+    if (result.error) {
+      toast({
+        title: "Error Updating Status",
+        description: result.error,
+        variant: "destructive",
+      });
+    } else if (result.case) {
+      setCaseData(prev => prev ? {...prev, status: newStatus } : null);
+      toast({
+        title: "Status Updated",
+        description: `Case status has been changed to "${newStatus}".`,
+      });
+    }
+  }
+
+
   if (isLoading) {
     return <CaseDetailSkeleton />;
   }
@@ -254,18 +277,28 @@ export default function CaseDetailPage() {
               <CardTitle className="font-headline">Case Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                 <div className="flex items-center gap-2">
                   <strong>Client:</strong> {caseData.client?.full_name}
                   <Button variant="outline" size="sm" onClick={handleScheduleMeeting}>
                     <Video className="mr-2 h-4 w-4" /> Schedule Meeting
                   </Button>
                 </div>
-                <div><strong>Lead Lawyer:</strong> {caseData.lawyer?.full_name || 'N/A'}</div>
+                <div><strong>Lead Lawyer:</strong> {caseData.lawyer?.name || 'N/A'}</div>
                 {/* <div><strong>Court:</strong> {caseData.court_name}</div> */}
                 <div><strong>Filing Date:</strong> {caseData.filing_date.toLocaleDateString()}</div>
-                <div>
-                  <strong>Status:</strong> <Badge variant={caseData.status === 'closed' ? 'outline' : 'default'} className="capitalize">{caseData.status}</Badge>
+                <div className="flex items-center gap-2">
+                  <strong>Status:</strong> 
+                  <Select value={caseData.status} onValueChange={(value: CaseStatus) => handleStatusChange(value)}>
+                      <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="open">Open</SelectItem>
+                          <SelectItem value="in-progress">In Progress</SelectItem>
+                          <SelectItem value="closed">Closed</SelectItem>
+                      </SelectContent>
+                  </Select>
                 </div>
                   <div>
                   <strong>Type:</strong> <Badge variant="secondary" className="capitalize">{caseData.case_type}</Badge>

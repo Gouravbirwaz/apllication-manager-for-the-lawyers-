@@ -2,6 +2,7 @@
 
 import { analyzeLegalDocument as analyzeLegalDocumentFlow, LegalDocumentAnalysisInput, LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
 import { askLegalAssistant as askLegalAssistantFlow, LegalAssistantInput } from "@/ai/flows/legal-assistant-flow";
+import type { Case } from "@/lib/types";
 
 export async function analyzeLegalDocumentAction(input: LegalDocumentAnalysisInput): Promise<{ analysis: LegalDocumentAnalysisOutput } | { error: string }> {
   try {
@@ -20,5 +21,28 @@ export async function askLegalAssistantAction(input: LegalAssistantInput): Promi
   } catch (e: any) {
     console.error(e);
     return { error: e.message || "Failed to get answer from assistant." };
+  }
+}
+
+export async function updateCaseStatusAction(caseId: string, status: string): Promise<{ case: Case } | { error: string }> {
+  try {
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${caseId}`;
+    const response = await fetch(apiUrl, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify({ status }),
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+        throw new Error(result.error || "Failed to update case status.");
+    }
+    return { case: result.case };
+  } catch (e: any) {
+    console.error(e);
+    return { error: e.message || "Could not update case status." };
   }
 }
