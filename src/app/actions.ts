@@ -3,7 +3,7 @@
 
 import { analyzeLegalDocument as analyzeLegalDocumentFlow, LegalDocumentAnalysisInput, LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
 import { askLegalAssistant as askLegalAssistantFlow, LegalAssistantInput } from "@/ai/flows/legal-assistant-flow";
-import type { Case } from "@/lib/types";
+import type { Case, AdvocatePayment } from "@/lib/types";
 
 export async function analyzeLegalDocumentAction(input: LegalDocumentAnalysisInput): Promise<{ analysis: LegalDocumentAnalysisOutput } | { error: string }> {
   try {
@@ -121,5 +121,81 @@ export async function updatePaymentStatusAction(paymentIds: string[]): Promise<{
     } catch (e: any) {
         console.error(e);
         return { error: e.message || "Could not update payment statuses." };
+    }
+}
+
+// Payment CRUD actions
+export async function addPaymentAction(paymentData: Omit<AdvocatePayment, 'id' | 'name' | 'email'>): Promise<{ payment: AdvocatePayment } | { error: string }> {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true',
+            },
+            body: JSON.stringify({
+              advocate_id: paymentData.advocate_id,
+              status: paymentData.status,
+              cases: paymentData.cases,
+              billable_hours: paymentData.billable_hours,
+              amount: paymentData.total,
+              transaction_status: paymentData.status === 'paid',
+            }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to add payment.');
+        }
+        return { payment: result.payment };
+    } catch (e: any) {
+        console.error(e);
+        return { error: e.message || 'Could not add payment.' };
+    }
+}
+
+export async function updatePaymentAction(paymentId: string, paymentData: Partial<AdvocatePayment>): Promise<{ payment: AdvocatePayment } | { error: string }> {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/${paymentId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true',
+            },
+            body: JSON.stringify({
+              // Map frontend fields to backend fields
+              ...paymentData.advocate_id && { advocate_id: paymentData.advocate_id },
+              ...paymentData.status && { transaction_status: paymentData.status === 'paid' },
+              ...paymentData.cases && { cases: paymentData.cases },
+              ...paymentData.billable_hours && { billable_hours: paymentData.billable_hours },
+              ...paymentData.total && { amount: paymentData.total },
+            }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to update payment.');
+        }
+        return { payment: result.payment };
+    } catch (e: any) {
+        console.error(e);
+        return { error: e.message || 'Could not update payment.' };
+    }
+}
+
+export async function deletePaymentAction(paymentId: string): Promise<{ success: boolean } | { error: string }> {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/${paymentId}`, {
+            method: 'DELETE',
+            headers: {
+                'ngrok-skip-browser-warning': 'true',
+            },
+        });
+        if (!response.ok) {
+            const result = await response.json();
+            throw new Error(result.error || 'Failed to delete payment.');
+        }
+        return { success: true };
+    } catch (e: any) {
+        console.error(e);
+        return { error: e.message || 'Could not delete payment.' };
     }
 }

@@ -4,6 +4,17 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal, ArrowUpDown } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -16,12 +27,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { AdvocatePayment } from "@/lib/types"
+import type { AdvocatePayment, User } from "@/lib/types"
+import { useToast } from "@/hooks/use-toast"
+import { deletePaymentAction } from "@/app/actions"
+import { EditPaymentDialog } from "@/components/payments/edit-payment-dialog"
 
 const PayAction = ({ payment }: { payment: AdvocatePayment }) => {
     const router = useRouter();
     const handlePay = () => {
-        // Navigate to a dedicated payment processing page
         const params = new URLSearchParams({
             paymentIds: payment.id,
             amount: String(payment.total),
@@ -31,8 +44,99 @@ const PayAction = ({ payment }: { payment: AdvocatePayment }) => {
     return <DropdownMenuItem onClick={handlePay} disabled={payment.status === 'paid'}>Pay Now</DropdownMenuItem>
 }
 
+const PaymentActions = ({
+    payment,
+    onPaymentDeleted,
+    onPaymentUpdated,
+    advocates
+}: {
+    payment: AdvocatePayment,
+    onPaymentDeleted: () => void,
+    onPaymentUpdated: () => void,
+    advocates: User[]
+}) => {
+    const { toast } = useToast();
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-export const columns: ColumnDef<AdvocatePayment>[] = [
+    const handleDelete = async () => {
+        const result = await deletePaymentAction(payment.id);
+        if (result.error) {
+            toast({
+                title: "Error",
+                description: result.error,
+                variant: "destructive",
+            });
+        } else {
+            toast({
+                title: "Success",
+                description: "Payment record deleted successfully.",
+            });
+            onPaymentDeleted();
+        }
+        setIsDeleteDialogOpen(false);
+    };
+
+    return (
+        <>
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the payment record for <strong>{payment.name}</strong>. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            
+            <EditPaymentDialog 
+              isOpen={isEditDialogOpen}
+              onOpenChange={setIsEditDialogOpen}
+              payment={payment}
+              advocates={advocates}
+              onPaymentUpdated={() => {
+                onPaymentUpdated();
+                setIsEditDialogOpen(false);
+              }}
+            />
+
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <PayAction payment={payment} />
+                    <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                        Delete
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </>
+    )
+}
+
+
+export const getColumns = (
+  onPaymentUpdated: () => void,
+  onPaymentDeleted: () => void,
+  advocates: User[]
+): ColumnDef<AdvocatePayment>[] => ([
   {
     id: "select",
     header: ({ table }) => (
@@ -116,26 +220,13 @@ export const columns: ColumnDef<AdvocatePayment>[] = [
       const payment = row.original
 
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
-            >
-              Copy Payment ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <PayAction payment={payment} />
-            <DropdownMenuItem>View Details</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <PaymentActions 
+          payment={payment}
+          onPaymentDeleted={onPaymentDeleted}
+          onPaymentUpdated={onPaymentUpdated}
+          advocates={advocates}
+        />
       )
     },
   },
-]
+])
