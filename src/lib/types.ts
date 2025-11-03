@@ -4,23 +4,24 @@ export type UserRole = "lawyer" | "client" | "assistant" | "admin" | "main";
 
 export interface User {
   id: number;
-  full_name: string;
+  name: string; // Changed from full_name to match backend
   email: string;
-  phone: string;
-  address: string;
+  phone_number: string; // Changed from phone
+  address?: string;
   organization?: string;
   created_at: string;
   updated_at: string;
   total_case_handled?: number;
-  // Fields from old mock data, can be cleaned up later
   role?: UserRole;
   photo_url?: string;
-  profile_pic?: string;
-  uid?: string;
+  // Fields from old mock data, can be cleaned up later
+  profile_pic?: string; // Covered by photo_url
+  uid?: string; // Covered by id
   bar_id?: string;
   last_login?: Date;
-  name?: string;
+  full_name?: string; // Covered by name
 }
+
 
 export type CaseType = "civil" | "criminal" | "corporate" | "property" | "family" | "Civil";
 export type CaseStatus = "open" | "in-progress" | "closed";
