@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { CreditCard, CalendarClock, PlusCircle } from 'lucide-react';
+import { CreditCard, CalendarClock, PlusCircle, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from './components/data-table';
@@ -12,6 +12,7 @@ import type { AdvocatePayment, User } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { AddPaymentDialog } from '@/components/payments/add-payment-dialog';
+import { useUser } from '@/contexts/UserContext';
 
 const Table = ({className, ...props}: React.HTMLAttributes<HTMLTableElement>) => <table className={className} {...props} />
 const TableHeader = ({className, ...props}: React.HTMLAttributes<HTMLTableSectionElement>) => <thead className={className} {...props} />
@@ -27,6 +28,7 @@ export default function PaymentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user, isLoading: isUserLoading } = useUser();
 
   const fetchPayments = async () => {
       // Don't set loading to true here to avoid skeleton on re-fetch
@@ -76,8 +78,10 @@ export default function PaymentsPage() {
     };
     
   useEffect(() => {
-    fetchPayments();
-  }, []);
+    if (user?.role === 'main') {
+      fetchPayments();
+    }
+  }, [user]);
 
   const handlePaymentAction = () => {
     // Re-fetch all data to ensure the table is up-to-date
@@ -90,7 +94,7 @@ export default function PaymentsPage() {
 
   const columns = useMemo(() => getColumns(handlePaymentAction, handlePaymentAction, advocates), [advocates]);
 
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return (
        <Card>
         <CardHeader>
@@ -130,6 +134,23 @@ export default function PaymentsPage() {
       </Card>
     )
   }
+
+  if (user?.role !== 'main') {
+    return (
+        <Card>
+            <CardHeader>
+                 <CardTitle className="font-headline text-2xl flex items-center gap-2">
+                    <ShieldAlert className="text-destructive"/> Access Denied
+                </CardTitle>
+                <CardDescription>You do not have permission to view this page.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p className="text-muted-foreground">Please contact your administrator if you believe this is an error.</p>
+            </CardContent>
+        </Card>
+    )
+  }
+
 
   return (
     <Card>

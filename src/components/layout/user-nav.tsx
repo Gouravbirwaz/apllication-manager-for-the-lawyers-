@@ -1,7 +1,6 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,44 +15,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { Skeleton } from '../ui/skeleton';
-import type { User } from '@/lib/types';
+import { useUser } from '@/contexts/UserContext';
 
 
 export function UserNav() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`;
-        const response = await fetch(apiUrl, {
-          headers: {
-            'ngrok-skip-browser-warning': 'true',
-          },
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch user');
-        }
-        const users: User[] = await response.json();
-        // Find the specific logged-in user. In a real app, this would be from a session.
-        const loggedInUser = users.find(u => u.name === 'Gourav');
-        if (loggedInUser) {
-          setUser(loggedInUser); 
-        } else if (users.length > 0) {
-          // Fallback to the first user if 'Gourav' isn't found, to prevent breaking UI
-          setUser(users[0]);
-        }
-      } catch (error) {
-        console.error("Failed to fetch user for UserNav:", error);
-        // Set user to null to show sign in button on error
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchUser();
-  }, []);
+  const { user, isLoading } = useUser();
 
   if (isLoading) {
     return <Skeleton className="h-8 w-8 rounded-full" />;
@@ -68,9 +34,11 @@ export function UserNav() {
   }
 
   const initials = user.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('');
+    ? user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+    : '';
 
   return (
     <DropdownMenu>

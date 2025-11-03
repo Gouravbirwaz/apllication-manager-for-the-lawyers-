@@ -27,6 +27,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { UserNav } from './user-nav';
 import { AshokaChakraIcon } from '../icons/ashoka-chakra-icon';
 import { useEffect, useState } from 'react';
+import { useUser } from '@/contexts/UserContext';
 
 const breadcrumbLabels: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -38,9 +39,20 @@ const breadcrumbLabels: Record<string, string> = {
   '/dashboard/payments': 'Payments',
 };
 
+const navItems = [
+  { href: '/dashboard', icon: Home, label: 'Dashboard', requiredRole: null },
+  { href: '/dashboard/cases', icon: Briefcase, label: 'Cases', requiredRole: null },
+  { href: '/dashboard/my-clients', icon: Users, label: 'My Clients', requiredRole: null },
+  { href: '/dashboard/tasks', icon: ListTodo, label: 'Tasks', requiredRole: null },
+  { href: '/dashboard/hearings', icon: CalendarDays, label: 'Hearings', requiredRole: null },
+  { href: '/dashboard/ask-bot', icon: Bot, label: 'Legal Bot', requiredRole: null },
+  { href: '/dashboard/payments', icon: CreditCard, label: 'Payments', requiredRole: 'main' },
+];
+
 export function AppHeader() {
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
+  const { user } = useUser();
 
   useEffect(() => {
     setIsClient(true);
@@ -105,55 +117,21 @@ export function AppHeader() {
               <AshokaChakraIcon className="h-5 w-5 transition-all group-hover:scale-110" />
               <span className="sr-only">Nyayadeep</span>
             </Link>
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-            >
-              <Home className="h-5 w-5" />
-              Dashboard
-            </Link>
-            <Link
-              href="/dashboard/cases"
-              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-            >
-              <Briefcase className="h-5 w-5" />
-              Cases
-            </Link>
-             <Link
-              href="/dashboard/my-clients"
-              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-            >
-              <Users className="h-5 w-5" />
-              My Clients
-            </Link>
-            <Link
-              href="/dashboard/tasks"
-              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-            >
-              <ListTodo className="h-5 w-5" />
-              Tasks
-            </Link>
-            <Link
-              href="/dashboard/hearings"
-              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-            >
-              <CalendarDays className="h-5 w-5" />
-              Hearings
-            </Link>
-            <Link
-              href="/dashboard/ask-bot"
-              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-            >
-              <Bot className="h-5 w-5" />
-              Legal Bot
-            </Link>
-            <Link
-              href="/dashboard/payments"
-              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-            >
-              <CreditCard className="h-5 w-5" />
-              Payments
-            </Link>
+            {navItems.map((item) => {
+              if (item.requiredRole && user?.role !== item.requiredRole) {
+                return null;
+              }
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.label}
+                </Link>
+              )
+            })}
           </nav>
         </SheetContent>
       </Sheet>
