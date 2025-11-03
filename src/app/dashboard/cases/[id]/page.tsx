@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockHearings, mockTasks } from "@/lib/mock-data";
+import { mockHearings, mockTasks, mockUsers } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FilePlus2, Upload, CalendarPlus, Wand2, PlusCircle, Video } from "lucide-react";
@@ -89,24 +89,40 @@ export default function CaseDetailPage() {
         setIsLoading(true);
         setError(null);
         try {
-            const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${id}`;
-            const response = await fetch(apiUrl, {
-                headers: { 'ngrok-skip-browser-warning': 'true' }
-            });
-            if (response.status === 404) {
+            // Fetch case and all users in parallel
+            const [caseResponse, usersResponse] = await Promise.all([
+                fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${id}`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                }),
+                fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                })
+            ]);
+
+            if (caseResponse.status === 404) {
                  notFound();
                  return;
             }
-            if (!response.ok) {
-                throw new Error(`Failed to fetch case details. Status: ${response.status}`);
+            if (!caseResponse.ok) {
+                throw new Error(`Failed to fetch case details. Status: ${caseResponse.status}`);
             }
-            const data = await response.json();
-             const transformedCase: Case = {
-                ...data,
-                case_id: data.id.toString(),
-                title: data.case_title,
-                filing_date: new Date(data.created_at),
-                next_hearing: data.next_hearing ? new Date(data.next_hearing) : undefined,
+             if (!usersResponse.ok) {
+                // Non-fatal, we can still show the case without the lawyer
+                console.error('Failed to fetch users');
+            }
+
+            const caseJson = await caseResponse.json();
+            const users = await usersResponse.json();
+
+            const lawyer = users.find((u: User) => u.id === caseJson.lawyer_id);
+
+            const transformedCase: Case = {
+                ...caseJson,
+                case_id: caseJson.id.toString(),
+                title: caseJson.case_title,
+                filing_date: new Date(caseJson.created_at),
+                next_hearing: caseJson.next_hearing ? new Date(caseJson.next_hearing) : undefined,
+                lawyer: lawyer
             };
             setCaseData(transformedCase);
 
@@ -245,7 +261,7 @@ export default function CaseDetailPage() {
                     <Video className="mr-2 h-4 w-4" /> Schedule Meeting
                   </Button>
                 </div>
-                {/* <div><strong>Lead Lawyer:</strong> {lawyer?.full_name}</div> */}
+                <div><strong>Lead Lawyer:</strong> {caseData.lawyer?.full_name || 'N/A'}</div>
                 {/* <div><strong>Court:</strong> {caseData.court_name}</div> */}
                 <div><strong>Filing Date:</strong> {caseData.filing_date.toLocaleDateString()}</div>
                 <div>

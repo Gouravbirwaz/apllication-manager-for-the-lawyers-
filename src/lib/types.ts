@@ -33,6 +33,8 @@ export interface Case {
   created_at: string;
   updated_at: string;
   client: User;
+  lawyer?: User;
+  lawyer_id?: number;
   case_id: string; // for compatibility with existing components
   title: string; // for compatibility with existing components
   filing_date: Date; // for compatibility
