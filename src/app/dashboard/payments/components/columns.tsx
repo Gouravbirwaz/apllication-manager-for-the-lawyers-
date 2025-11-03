@@ -189,8 +189,8 @@ export const getColumns = (
     accessorKey: "cases",
     header: () => <div className="text-right">Cases</div>,
     cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("cases"))
-        return <div className="text-right font-medium">{amount}</div>
+        const casesCount = row.getValue("cases") as number;
+        return <div className="text-right font-medium">{casesCount}</div>
     },
   },
    {
