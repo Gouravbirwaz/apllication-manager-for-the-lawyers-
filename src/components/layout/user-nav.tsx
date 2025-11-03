@@ -26,7 +26,6 @@ export function UserNav() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        // Assuming the first user is the logged-in user for this example
         const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`;
         const response = await fetch(apiUrl, {
           headers: {
@@ -37,8 +36,13 @@ export function UserNav() {
           throw new Error('Failed to fetch user');
         }
         const users: User[] = await response.json();
-        if (users.length > 0) {
-          setUser(users[0]); 
+        // Find the specific logged-in user. In a real app, this would be from a session.
+        const loggedInUser = users.find(u => u.name === 'Gourav');
+        if (loggedInUser) {
+          setUser(loggedInUser); 
+        } else if (users.length > 0) {
+          // Fallback to the first user if 'Gourav' isn't found, to prevent breaking UI
+          setUser(users[0]);
         }
       } catch (error) {
         console.error("Failed to fetch user for UserNav:", error);
