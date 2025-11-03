@@ -111,7 +111,7 @@ export function AddCaseDialog({ children, onCaseAdded }: AddCaseDialogProps) {
           status,
           client_id: parseInt(clientId, 10),
           advocate_id: advocateId ? parseInt(advocateId, 10) : null,
-          next_hearing: nextHearing ? nextHearing.toISOString() : null,
+          next_hearing: nextHearing ? format(nextHearing, 'yyyy-MM-dd') : null,
         }),
       });
 
