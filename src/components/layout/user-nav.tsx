@@ -33,19 +33,21 @@ export function UserNav() {
     );
   }
 
-  const initials = user.name
-    ? user.name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-    : '';
+  const userName = user.name || user.full_name || 'User';
+  const userEmail = user.email || 'No email';
+
+  const initials = userName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .substring(0, 2);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={user.photo_url} alt={`@${user.name}`} data-ai-hint="person face" />
+            <AvatarImage src={user.photo_url || user.profile_pic} alt={`@${userName}`} data-ai-hint="person face" />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>
@@ -53,9 +55,9 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name}</p>
+            <p className="text-sm font-medium leading-none">{userName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
+              {userEmail}
             </p>
           </div>
         </DropdownMenuLabel>

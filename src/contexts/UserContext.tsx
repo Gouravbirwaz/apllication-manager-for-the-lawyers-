@@ -28,22 +28,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
           throw new Error('Failed to fetch user');
         }
         const users: User[] = await response.json();
-        // Find the specific logged-in user. In a real app, this would be from a session.
-        const loggedInUser = users.find(u => u.name === 'Gourav');
+        // In a real app, this would come from a session.
+        // For now, we'll find the user with the 'main' role.
+        let loggedInUser = users.find(u => u.role === 'main');
         
-        if (loggedInUser) {
-           // Manually assign a role for testing if not present
-           if (!loggedInUser.role) {
-             loggedInUser.role = 'main';
-           }
-           setUser(loggedInUser);
-        } else if (users.length > 0) {
-          const firstUser = users[0];
-          if (!firstUser.role) {
-             firstUser.role = 'main';
-           }
-          setUser(firstUser);
+        // If no 'main' user, fall back to the first user for demo purposes.
+        if (!loggedInUser && users.length > 0) {
+            loggedInUser = users[0];
+            // Assign a default role if missing
+            if (!loggedInUser.role) {
+                loggedInUser.role = 'lawyer';
+            }
         }
+        
+        setUser(loggedInUser || null);
+
       } catch (error) {
         console.error("Failed to fetch user for UserContext:", error);
         setUser(null);
