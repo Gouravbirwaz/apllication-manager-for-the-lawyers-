@@ -11,6 +11,7 @@ import {
   Search,
   Bot,
   Users,
+  CreditCard,
 } from 'lucide-react';
 import {
   Breadcrumb,
@@ -34,6 +35,7 @@ const breadcrumbLabels: Record<string, string> = {
   '/dashboard/tasks': 'Tasks',
   '/dashboard/hearings': 'Hearings',
   '/dashboard/ask-bot': 'Legal Bot',
+  '/dashboard/payments': 'Payments',
 };
 
 export function AppHeader() {
@@ -144,6 +146,13 @@ export function AppHeader() {
             >
               <Bot className="h-5 w-5" />
               Legal Bot
+            </Link>
+            <Link
+              href="/dashboard/payments"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <CreditCard className="h-5 w-5" />
+              Payments
             </Link>
           </nav>
         </SheetContent>

@@ -10,6 +10,7 @@ import {
   Settings,
   Bot,
   Users,
+  CreditCard,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -27,6 +28,7 @@ const navItems = [
   { href: '/dashboard/tasks', icon: ListTodo, label: 'Tasks' },
   { href: '/dashboard/hearings', icon: CalendarDays, label: 'Hearings' },
   { href: '/dashboard/ask-bot', icon: Bot, label: 'Legal Bot' },
+  { href: '/dashboard/payments', icon: CreditCard, label: 'Payments' },
 ];
 
 export function AppSidebar() {
