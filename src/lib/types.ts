@@ -41,6 +41,7 @@ export interface Case {
   filing_date: Date; // for compatibility
   description?: string;
   lawyer?: User; // This will be populated manually after fetching
+  advocate_id?: number;
 }
 
 export interface Document {
