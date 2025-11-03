@@ -1,3 +1,4 @@
+
 "use server";
 
 import { analyzeLegalDocument as analyzeLegalDocumentFlow, LegalDocumentAnalysisInput, LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
@@ -74,7 +75,7 @@ export async function updateCaseAction(caseData: Partial<Case>): Promise<{ case:
   try {
     const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${caseData.id}`;
     const response = await fetch(apiUrl, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'ngrok-skip-browser-warning': 'true',

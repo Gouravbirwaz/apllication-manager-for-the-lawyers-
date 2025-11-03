@@ -18,7 +18,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import type { Case, User } from '@/lib/types';
+import type { Case, CaseStatus, User } from '@/lib/types';
 import {
   Select,
   SelectContent,
@@ -121,24 +121,15 @@ export function EditCaseDialog({ isOpen, onOpenChange, caseData, onCaseUpdated }
         case_type: caseType,
         status,
         client_id: parseInt(clientId, 10),
-        advocate_id: advocateId ? parseInt(advocateId, 10) : null,
+        advocate_id: advocateId ? parseInt(advocateId, 10) : undefined,
         next_hearing: nextHearing ? format(nextHearing, 'yyyy-MM-dd') : null,
     };
 
-    // We need to use a different action for PUT
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${caseData.id}`, {
-         method: 'PUT',
-         headers: {
-             'Content-Type': 'application/json',
-             'ngrok-skip-browser-warning': 'true'
-         },
-         body: JSON.stringify(updatedCaseData)
-    });
+    const result = await updateCaseAction(updatedCaseData as Partial<Case>);
 
     setIsSaving(false);
 
-    if (response.ok) {
-        const result = await response.json();
+    if (result.case) {
         toast({
             title: 'Case Updated',
             description: `"${result.case.case_title}" has been successfully updated.`,
@@ -146,10 +137,9 @@ export function EditCaseDialog({ isOpen, onOpenChange, caseData, onCaseUpdated }
         onCaseUpdated(result.case);
         onOpenChange(false);
     } else {
-        const error = await response.json();
         toast({
             title: 'Error Updating Case',
-            description: error.message || 'An unexpected error occurred.',
+            description: result.error || 'An unexpected error occurred.',
             variant: 'destructive',
         });
     }
