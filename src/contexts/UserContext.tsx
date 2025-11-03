@@ -17,31 +17,38 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const fetchUser = async () => {
+      setIsLoading(true);
       try {
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`;
-        const response = await fetch(apiUrl, {
-          headers: {
-            'ngrok-skip-browser-warning': 'true',
-          },
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch user');
-        }
-        const users: User[] = await response.json();
-        // In a real app, this would come from a session.
-        // For now, we'll find the user with the 'main' role.
-        let loggedInUser = users.find(u => u.role === 'main');
+        const loggedInUserId = sessionStorage.getItem('userId');
+        let userToSet = null;
+
+        if (loggedInUserId) {
+          // A user is logged in, fetch their specific data
+          const userApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/user/${loggedInUserId}`;
+          const response = await fetch(userApiUrl, {
+            headers: { 'ngrok-skip-browser-warning': 'true' },
+          });
+          if (response.ok) {
+            userToSet = await response.json();
+          } else {
+             console.error(`Failed to fetch user with ID ${loggedInUserId}`);
+             sessionStorage.removeItem('userId'); // Clear invalid ID
+          }
+        } 
         
-        // If no 'main' user, fall back to the first user for demo purposes.
-        if (!loggedInUser && users.length > 0) {
-            loggedInUser = users[0];
-            // Assign a default role if missing
-            if (!loggedInUser.role) {
-                loggedInUser.role = 'lawyer';
-            }
+        if (!userToSet) {
+          // Fallback for when no one is logged in: try to get the 'main' user for default view
+          const allUsersApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`;
+          const response = await fetch(allUsersApiUrl, {
+            headers: { 'ngrok-skip-browser-warning': 'true' },
+          });
+           if (response.ok) {
+              const users: User[] = await response.json();
+              userToSet = users.find(u => u.role === 'main') || null;
+           }
         }
         
-        setUser(loggedInUser || null);
+        setUser(userToSet);
 
       } catch (error) {
         console.error("Failed to fetch user for UserContext:", error);
@@ -50,7 +57,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       }
     };
+    
     fetchUser();
+
+    // Optional: Add event listener to handle changes in other tabs
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'userId') {
+        fetchUser();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+
   }, []);
 
   return (

@@ -14,12 +14,20 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Skeleton } from '../ui/skeleton';
 import { useUser } from '@/contexts/UserContext';
 
 
 export function UserNav() {
   const { user, isLoading } = useUser();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('userId');
+    // We can just push to login, the UserProvider will handle the state change.
+    router.push('/login');
+  };
 
   if (isLoading) {
     return <Skeleton className="h-8 w-8 rounded-full" />;
@@ -73,12 +81,12 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <Link href="/login">
-          <DropdownMenuItem>
-            Log out
-            <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </Link>
+        
+        <DropdownMenuItem onClick={handleLogout}>
+          Log out
+          <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
+        </DropdownMenuItem>
+        
       </DropdownMenuContent>
     </DropdownMenu>
   );

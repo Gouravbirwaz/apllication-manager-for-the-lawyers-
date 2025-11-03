@@ -30,13 +30,18 @@ export function LoginForm() {
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && data.id) {
         toast({
           title: 'Success',
           description: data.message || 'Logged in successfully.',
         });
+        // Store user ID in session storage to persist login state
+        sessionStorage.setItem('userId', data.id);
+        
         // Add a small delay to allow session/cookie to be set before redirecting
+        // and force a reload to re-trigger UserContext fetch
         setTimeout(() => router.push('/dashboard'), 500);
+
       } else {
         toast({
           title: 'Login Failed',
@@ -83,6 +88,11 @@ export function LoginForm() {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !isLoading) {
+              handleSignIn();
+            }
+          }}
           disabled={isLoading}
           suppressHydrationWarning
         />
