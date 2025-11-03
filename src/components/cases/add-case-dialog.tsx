@@ -70,8 +70,7 @@ export function AddCaseDialog({ children, onCaseAdded }: AddCaseDialogProps) {
           const usersData = await usersResponse.json();
 
           setClients(clientsData);
-          // Assuming advocates can be lawyers or admins
-          setAdvocates(usersData.filter((u: User) => u.role === 'lawyer' || u.role === 'admin'));
+          setAdvocates(usersData);
 
         } catch (error: any) {
           toast({
