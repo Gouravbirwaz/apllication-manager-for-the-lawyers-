@@ -100,10 +100,6 @@ export default function PaymentsPage() {
                   <CalendarClock className="h-3.5 w-3.5" />
                   Schedule Payments
                 </Button>
-                <Button size="sm" className="gap-1" onClick={() => router.push('/dashboard/payments/process')} disabled={totalPayable === 0}>
-                  <Banknote className="h-3.5 w-3.5" />
-                  Bulk Pay Pending
-                </Button>
              </div>
             <p className="text-sm text-muted-foreground">
                 Total Payable: <span className="font-semibold text-primary">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalPayable)}</span>
