@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { CreditCard, CalendarClock, PlusCircle } from 'lucide-react';
@@ -59,7 +60,7 @@ export default function PaymentsPage() {
             advocate_id: String(p.advocate_id),
             name: advocate?.name || 'Unknown Advocate',
             email: advocate?.email || 'N/A',
-            cases: p.cases || 0,
+            cases: advocate?.total_case_handled || p.cases || 0,
             billable_hours: p.billable_hours || 0,
             status: p.transaction_status ? 'paid' : 'pending',
             total: p.amount || 0,
