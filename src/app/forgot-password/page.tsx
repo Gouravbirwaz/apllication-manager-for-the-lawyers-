@@ -5,7 +5,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthFormWrapper
       title="Forgot Your Password?"
-      description="Enter your email and we'll send you a temporary password."
+      description="Enter your email to receive a one-time password (OTP)."
       footerText="Remember your password?"
       footerLink="/login"
       footerLinkText="Sign In"

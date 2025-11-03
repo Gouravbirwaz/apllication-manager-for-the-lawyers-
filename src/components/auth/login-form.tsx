@@ -88,7 +88,7 @@ export function LoginForm() {
         />
       </div>
       <Button onClick={handleSignIn} disabled={isLoading} className="w-full" suppressHydrationWarning>
-        {isLoading ? 'Signing In...' : 'Sign In'}
+        {isLoading ? 'Logging In...' : 'Login'}
       </Button>
     </div>
   );
