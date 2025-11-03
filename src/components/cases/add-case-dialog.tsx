@@ -36,44 +36,54 @@ interface AddCaseDialogProps {
 export function AddCaseDialog({ children, onCaseAdded }: AddCaseDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('');
-  const [caseType, setCaseType] = useState<string>('');
-  const [status, setStatus] = useState<string>('open');
+  const [caseType, setCaseType] = useState('');
+  const [status, setStatus] = useState('open');
   const [nextHearing, setNextHearing] = useState<Date | undefined>();
   const [clientId, setClientId] = useState<string | undefined>();
+  const [advocateId, setAdvocateId] = useState<string | undefined>();
   
   const [clients, setClients] = useState<User[]>([]);
-  const [isLoadingClients, setIsLoadingClients] = useState(false);
+  const [advocates, setAdvocates] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
-      const fetchClients = async () => {
-        setIsLoadingClients(true);
+      const fetchData = async () => {
+        setIsLoading(true);
         try {
-          const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/clients`;
-          const response = await fetch(apiUrl, {
-            headers: {
-              'ngrok-skip-browser-warning': 'true',
-            },
-          });
-          if (!response.ok) {
-            throw new Error('Failed to fetch clients');
-          }
-          const data = await response.json();
-          setClients(data);
-        } catch (error) {
+          const [clientsResponse, usersResponse] = await Promise.all([
+            fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/clients`, {
+              headers: { 'ngrok-skip-browser-warning': 'true' },
+            }),
+            fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
+              headers: { 'ngrok-skip-browser-warning': 'true' },
+            })
+          ]);
+          
+          if (!clientsResponse.ok) throw new Error('Failed to fetch clients');
+          if (!usersResponse.ok) throw new Error('Failed to fetch advocates');
+
+          const clientsData = await clientsResponse.json();
+          const usersData = await usersResponse.json();
+
+          setClients(clientsData);
+          // Assuming advocates can be lawyers or admins
+          setAdvocates(usersData.filter((u: User) => u.role === 'lawyer' || u.role === 'admin'));
+
+        } catch (error: any) {
           toast({
             title: 'Error',
-            description: 'Could not load clients. Please try again.',
+            description: `Could not load data: ${error.message}`,
             variant: 'destructive',
           });
         } finally {
-          setIsLoadingClients(false);
+          setIsLoading(false);
         }
       };
-      fetchClients();
+      fetchData();
     }
   }, [isOpen, toast]);
 
@@ -81,7 +91,7 @@ export function AddCaseDialog({ children, onCaseAdded }: AddCaseDialogProps) {
     if (!title || !caseType || !status || !clientId) {
       toast({
         title: 'Missing Information',
-        description: 'Please fill out all required fields.',
+        description: 'Please fill out all required fields (Client, Title, Type, Status).',
         variant: 'destructive',
       });
       return;
@@ -101,6 +111,7 @@ export function AddCaseDialog({ children, onCaseAdded }: AddCaseDialogProps) {
           case_type: caseType,
           status,
           client_id: parseInt(clientId, 10),
+          advocate_id: advocateId ? parseInt(advocateId, 10) : null,
           next_hearing: nextHearing ? nextHearing.toISOString() : null,
         }),
       });
@@ -122,7 +133,7 @@ export function AddCaseDialog({ children, onCaseAdded }: AddCaseDialogProps) {
 
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: 'Error Adding Case',
         description: error.message || 'An unexpected error occurred.',
         variant: 'destructive',
       });
@@ -137,6 +148,7 @@ export function AddCaseDialog({ children, onCaseAdded }: AddCaseDialogProps) {
     setStatus('open');
     setNextHearing(undefined);
     setClientId(undefined);
+    setAdvocateId(undefined);
   }
 
   return (
@@ -156,13 +168,27 @@ export function AddCaseDialog({ children, onCaseAdded }: AddCaseDialogProps) {
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="client" className="text-right">Client</Label>
-            <Select onValueChange={setClientId} value={clientId} disabled={isLoadingClients}>
+            <Select onValueChange={setClientId} value={clientId} disabled={isLoading}>
                 <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder={isLoadingClients ? "Loading clients..." : "Select a client"} />
+                    <SelectValue placeholder={isLoading ? "Loading clients..." : "Select a client"} />
                 </SelectTrigger>
                 <SelectContent>
                     {clients.map(c => (
                         <SelectItem key={c.id} value={String(c.id)}>{c.full_name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="advocate" className="text-right">Advocate</Label>
+            <Select onValueChange={setAdvocateId} value={advocateId} disabled={isLoading}>
+                <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder={isLoading ? "Loading advocates..." : "Select an advocate (optional)"} />
+                </SelectTrigger>
+                <SelectContent>
+                    {advocates.map(a => (
+                        <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>
@@ -222,7 +248,7 @@ export function AddCaseDialog({ children, onCaseAdded }: AddCaseDialogProps) {
 
         </div>
         <DialogFooter>
-          <Button onClick={handleSave} disabled={isSaving || isLoadingClients}>
+          <Button onClick={handleSave} disabled={isSaving || isLoading}>
             {isSaving ? 'Saving...' : 'Save Case'}
           </Button>
         </DialogFooter>
