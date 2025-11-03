@@ -18,13 +18,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const fetchUser = async () => {
       setIsLoading(true);
+      
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      if (!apiBaseUrl) {
+          console.error("CRITICAL: NEXT_PUBLIC_API_BASE_URL is not set. Cannot fetch user data.");
+          setIsLoading(false);
+          return;
+      }
+
       try {
         const loggedInUserId = sessionStorage.getItem('userId');
         let userToSet = null;
 
         if (loggedInUserId) {
           // A user is logged in, fetch their specific data
-          const userApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/user/${loggedInUserId}`;
+          const userApiUrl = `${apiBaseUrl}/get/user/${loggedInUserId}`;
           const response = await fetch(userApiUrl, {
             headers: { 'ngrok-skip-browser-warning': 'true' },
           });
@@ -38,7 +46,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         
         if (!userToSet) {
           // Fallback for when no one is logged in: try to get the 'main' user for default view
-          const allUsersApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`;
+          const allUsersApiUrl = `${apiBaseUrl}/get/all_users`;
           const response = await fetch(allUsersApiUrl, {
             headers: { 'ngrok-skip-browser-warning': 'true' },
           });
