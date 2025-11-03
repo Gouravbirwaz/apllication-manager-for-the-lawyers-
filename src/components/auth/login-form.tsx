@@ -30,13 +30,15 @@ export function LoginForm() {
 
       const data = await response.json();
 
-      if (response.ok && data.id) {
+      const userId = data.id || data.user?.id;
+
+      if (response.ok && userId) {
         toast({
           title: 'Success',
           description: data.message || 'Logged in successfully.',
         });
         // Store user ID in session storage to persist login state
-        sessionStorage.setItem('userId', data.id);
+        sessionStorage.setItem('userId', userId);
         
         // Add a small delay to allow session/cookie to be set before redirecting
         // and force a reload to re-trigger UserContext fetch
