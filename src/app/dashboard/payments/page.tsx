@@ -1,20 +1,15 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Banknote, CreditCard, CalendarClock } from 'lucide-react';
+import { CreditCard, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from './components/data-table';
 import { columns } from './components/columns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import type { AdvocatePayment } from '@/lib/types';
-import { useRouter } from 'next/navigation';
-
-export const mockAdvocatePayments: AdvocatePayment[] = [
-    { id: 'adv-001', name: 'Aditi Sharma', email: 'a.sharma@nyayadeep.pro', cases: 3, hours: 45, rate: 2500, total: 112500, status: 'pending' },
-    { id: 'adv-002', name: 'Vikram Rao', email: 'v.rao@nyayadeep.pro', cases: 5, hours: 72, rate: 3000, total: 216000, status: 'pending' },
-    { id: 'adv-003', name: 'Priya Singh', email: 'p.singh@nyayadeep.pro', cases: 2, hours: 20, rate: 1500, total: 30000, status: 'paid' },
-];
+import type { AdvocatePayment, User } from '@/lib/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const Table = ({className, ...props}: React.HTMLAttributes<HTMLTableElement>) => <table className={className} {...props} />
 const TableHeader = ({className, ...props}: React.HTMLAttributes<HTMLTableSectionElement>) => <thead className={className} {...props} />
@@ -27,16 +22,58 @@ const TableCell = ({className, ...props}: React.HTMLAttributes<HTMLTableCellElem
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<AdvocatePayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setPayments(mockAdvocatePayments);
-      setIsLoading(false);
-    }, 1000);
+    const fetchPayments = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const [paymentsResponse, usersResponse] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`, {
+            headers: { 'ngrok-skip-browser-warning': 'true' }
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
+            headers: { 'ngrok-skip-browser-warning': 'true' }
+          })
+        ]);
 
-    return () => clearTimeout(timer);
+        if (!paymentsResponse.ok) {
+          throw new Error(`Failed to fetch payments. Status: ${paymentsResponse.status}`);
+        }
+        if (!usersResponse.ok) {
+          throw new Error(`Failed to fetch users. Status: ${usersResponse.status}`);
+        }
+
+        const paymentsData: any[] = await paymentsResponse.json();
+        const usersData: User[] = await usersResponse.json();
+        
+        const usersMap = new Map(usersData.map(user => [user.id, user]));
+
+        const transformedPayments: AdvocatePayment[] = paymentsData.map(p => {
+          const advocate = usersMap.get(p.advocate_id);
+          return {
+            id: String(p.id),
+            advocate_id: String(p.advocate_id),
+            name: advocate?.name || 'Unknown Advocate',
+            email: advocate?.email || 'N/A',
+            cases: p.cases || 0,
+            billable_hours: p.billable_hours || 0,
+            status: p.transaction_status ? 'paid' : 'pending',
+            total: p.amount || 0,
+          };
+        });
+
+        setPayments(transformedPayments);
+      } catch (err: any) {
+        setError(err.message || 'An unexpected error occurred.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchPayments();
   }, []);
   
   const totalPayable = payments
@@ -108,7 +145,15 @@ export default function PaymentsPage() {
         </div>
       </CardHeader>
       <CardContent>
+        {error ? (
+           <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : (
           <DataTable columns={columns} data={payments} />
+        )}
       </CardContent>
     </Card>
   );

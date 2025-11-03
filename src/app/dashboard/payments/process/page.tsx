@@ -1,15 +1,16 @@
 
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, CreditCard, Loader2, User, Users } from 'lucide-react';
 import { useState } from 'react';
-import { mockAdvocatePayments } from '../page'; // In a real app, this would be an API call
-import type { AdvocatePayment } from '@/lib/types';
+import type { AdvocatePayment, User } from '@/lib/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 function PaymentProcessing() {
     const searchParams = useSearchParams();
@@ -18,27 +19,64 @@ function PaymentProcessing() {
     
     const [isProcessing, setIsProcessing] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
+    const [paymentsToProcess, setPaymentsToProcess] = useState<AdvocatePayment[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const paymentIds = searchParams.getAll('paymentIds');
     const amount = searchParams.get('amount');
     const totalAmount = Number(amount) || 0;
 
-    // In a real app, you might fetch this data from the server based on IDs
-    // For this mock, we filter the existing payments
-    const paymentsToProcess: AdvocatePayment[] = mockAdvocatePayments.filter(p => paymentIds.includes(p.id));
+    useEffect(() => {
+        const fetchPaymentDetails = async () => {
+            if (paymentIds.length === 0) {
+                setError("No payment IDs provided.");
+                setIsLoading(false);
+                return;
+            }
+            setIsLoading(true);
+            try {
+                 const [paymentsResponse, usersResponse] = await Promise.all([
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`, {
+                        headers: { 'ngrok-skip-browser-warning': 'true' }
+                    }),
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
+                        headers: { 'ngrok-skip-browser-warning': 'true' }
+                    })
+                ]);
 
-    if (!amount && paymentIds.length === 0) {
-        // Handle bulk pay with no selections
-        paymentsToProcess.push(...mockAdvocatePayments.filter(p => p.status === 'pending'));
-        const bulkAmount = paymentsToProcess.reduce((sum, p) => sum + p.total, 0);
-        
-        if (typeof window !== 'undefined') {
-          const params = new URLSearchParams();
-          paymentsToProcess.forEach(p => params.append('paymentIds', p.id));
-          params.set('amount', String(bulkAmount));
-          router.replace(`/dashboard/payments/process?${params.toString()}`);
+                if (!paymentsResponse.ok) throw new Error("Failed to fetch payments");
+                if (!usersResponse.ok) throw new Error("Failed to fetch users");
+
+                const allPayments: any[] = await paymentsResponse.json();
+                const allUsers: User[] = await usersResponse.json();
+                const usersMap = new Map(allUsers.map(u => [u.id, u]));
+
+                const filteredPayments = allPayments
+                    .filter(p => paymentIds.includes(String(p.id)))
+                    .map(p => {
+                        const advocate = usersMap.get(p.advocate_id);
+                        return {
+                            id: String(p.id),
+                            advocate_id: String(p.advocate_id),
+                            name: advocate?.name || 'Unknown Advocate',
+                            email: advocate?.email || 'N/A',
+                            cases: p.cases || 0,
+                            billable_hours: p.billable_hours || 0,
+                            status: p.transaction_status ? 'paid' : 'pending',
+                            total: p.amount || 0,
+                        }
+                    });
+                
+                setPaymentsToProcess(filteredPayments);
+            } catch(err: any) {
+                setError(err.message || "Failed to load payment details.");
+            } finally {
+                setIsLoading(false);
+            }
         }
-    }
+        fetchPaymentDetails();
+    }, [paymentIds]);
 
 
     const handleConfirmPayment = async () => {
@@ -47,6 +85,9 @@ function PaymentProcessing() {
         // Simulate API call to a payment gateway like Stripe
         await new Promise(resolve => setTimeout(resolve, 3000));
 
+        // Here you would also update the status on your own backend
+        // For now, we'll just simulate success
+        
         setIsProcessing(false);
         setIsComplete(true);
         
@@ -58,9 +99,29 @@ function PaymentProcessing() {
         setTimeout(() => router.push('/dashboard/payments'), 2000);
     };
     
+    if (isLoading) {
+        return (
+            <CardContent>
+                <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+            </CardContent>
+        )
+    }
+
+    if (error) {
+        return (
+            <CardContent>
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            </CardContent>
+        )
+    }
+    
     if (isComplete) {
         return (
-             <div className="text-center space-y-4">
+             <div className="text-center space-y-4 p-6">
                 <CheckCircle className="h-16 w-16 text-green-500 mx-auto animate-pulse" />
                 <h2 className="text-2xl font-bold">Payment Complete!</h2>
                 <p className="text-muted-foreground">Redirecting you back to the payments dashboard...</p>

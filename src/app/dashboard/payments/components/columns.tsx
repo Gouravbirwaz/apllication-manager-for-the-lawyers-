@@ -90,10 +90,10 @@ export const columns: ColumnDef<AdvocatePayment>[] = [
     },
   },
    {
-    accessorKey: "hours",
+    accessorKey: "billable_hours",
     header: () => <div className="text-right">Billable Hours</div>,
     cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("hours"))
+        const amount = parseFloat(row.getValue("billable_hours"))
         return <div className="text-right font-medium">{amount}h</div>
     },
   },

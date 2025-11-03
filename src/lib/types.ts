@@ -92,11 +92,11 @@ export interface Notification {
 
 export interface AdvocatePayment {
   id: string;
-  name: string;
-  email: string;
+  advocate_id: string;
+  name: string; // Denormalized from User
+  email: string; // Denormalized from User
   cases: number;
-  hours: number;
-  rate: number;
-  total: number;
+  billable_hours: number;
+  total: number; // Corresponds to `amount` from backend
   status: 'pending' | 'paid';
 }
