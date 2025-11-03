@@ -12,34 +12,47 @@ export function SignUpForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [profilePic, setProfilePic] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setProfilePic(e.target.files[0]);
+    }
+  };
 
   const handleSignUp = async () => {
     if (!fullName || !email || !password || !phoneNumber) {
       toast({
         title: 'Error',
-        description: 'Please fill out all fields.',
+        description: 'Please fill out all required fields.',
         variant: 'destructive',
       });
       return;
     }
     setIsLoading(true);
+
+    // Use FormData to handle file upload along with other data
+    const formData = new FormData();
+    formData.append('name', fullName);
+    formData.append('email', email);
+    formData.append('password', password);
+    formData.append('phone_number', phoneNumber);
+    if (profilePic) {
+      formData.append('photo', profilePic);
+    }
+    
     try {
       const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/signup`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          // 'Content-Type' is not set, browser will set it to 'multipart/form-data'
           'ngrok-skip-browser-warning': 'true',
         },
-        body: JSON.stringify({
-          name: fullName,
-          email,
-          password,
-          phone_number: phoneNumber,
-        }),
+        body: formData,
       });
 
       const data = await response.json();
@@ -116,6 +129,18 @@ export function SignUpForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={isLoading}
+          suppressHydrationWarning
+        />
+      </div>
+       <div className="grid gap-2">
+        <Label htmlFor="profile-pic">Profile Picture (Optional)</Label>
+        <Input
+          id="profile-pic"
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          disabled={isLoading}
+          className="file:text-primary file:font-medium"
           suppressHydrationWarning
         />
       </div>
