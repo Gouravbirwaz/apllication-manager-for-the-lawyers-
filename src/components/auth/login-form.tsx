@@ -9,6 +9,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
+async function fetchUserByEmail(email: string): Promise<{ id: string } | null> {
+  try {
+    const userApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/user_by_email/${email}`;
+    const response = await fetch(userApiUrl, {
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+    });
+    if (response.ok) {
+      return await response.json();
+    }
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch user by email:", error);
+    return null;
+  }
+}
+
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,22 +45,27 @@ export function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
 
-      const loginData = await loginResponse.json();
+      if (loginResponse.ok) {
+        // Login successful, now fetch user details to get the ID
+        const userData = await fetchUserByEmail(email);
 
-      if (loginResponse.ok && loginData && loginData.id) {
-        toast({
-          title: 'Login Successful',
-          description: 'Welcome back!',
-        });
-        
-        // Store user ID in session storage to persist login state
-        sessionStorage.setItem('userId', loginData.id);
-        
-        // Redirect to dashboard after successfully getting user details
-        // A small delay can help ensure session storage is set before navigation.
-        setTimeout(() => router.push('/dashboard'), 300);
+        if (userData && userData.id) {
+            toast({
+              title: 'Login Successful',
+              description: 'Welcome back!',
+            });
+            
+            // Store user ID in session storage to persist login state
+            sessionStorage.setItem('userId', userData.id);
+            
+            // Redirect to dashboard
+            setTimeout(() => router.push('/dashboard'), 300);
+        } else {
+            throw new Error('Login succeeded but failed to retrieve user details.');
+        }
 
       } else {
+        const loginData = await loginResponse.json();
         toast({
           title: 'Login Failed',
           description: loginData.error || 'Invalid credentials.',
