@@ -1,5 +1,7 @@
+
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -37,6 +39,7 @@ const breadcrumbLabels: Record<string, string> = {
   '/dashboard/hearings': 'Hearings',
   '/dashboard/ask-bot': 'Legal Bot',
   '/dashboard/payments': 'Payments',
+  '/dashboard/payments/process': 'Process Payment',
 };
 
 const navItems = [
@@ -67,32 +70,42 @@ export function AppHeader() {
     
     if (pathParts.length > 1) {
        const currentPagePath = `/${pathParts.join('/')}`;
-       if(pathParts[1] === 'cases' && pathParts.length > 2) {
-          return <>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href="/dashboard/cases">All Cases</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Case Details</BreadcrumbPage>
-            </BreadcrumbItem>
-          </>;
-       }
        
-       const pageName = breadcrumbLabels[currentPagePath] || pathParts[pathParts.length - 1].replace(/-/g, ' ');
-       return <>
-        <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link href="/dashboard">Dashboard</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbPage className="capitalize">{pageName}</BreadcrumbPage>
-        </BreadcrumbItem>
-      </>;
+       let segments: React.ReactNode[] = [];
+       segments.push(
+         <BreadcrumbItem key="dashboard-home">
+            <BreadcrumbLink asChild>
+                <Link href="/dashboard">Dashboard</Link>
+            </BreadcrumbLink>
+         </BreadcrumbItem>
+       );
+
+       let currentPath = '/dashboard';
+       pathParts.slice(1).forEach((part, index) => {
+           currentPath += `/${part}`;
+           const isLast = index === pathParts.length - 2;
+           const label = breadcrumbLabels[currentPath] || part.replace(/-/g, ' ');
+
+           if (isLast) {
+                segments.push(<BreadcrumbSeparator key={`sep-${index}`} />);
+                segments.push(
+                    <BreadcrumbItem key={currentPath}>
+                        <BreadcrumbPage className="capitalize">{label}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                );
+           } else {
+               segments.push(<BreadcrumbSeparator key={`sep-${index}`} />);
+               segments.push(
+                    <BreadcrumbItem key={currentPath}>
+                        <BreadcrumbLink asChild>
+                            <Link href={currentPath} className="capitalize">{label}</Link>
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+               );
+           }
+       });
+
+       return segments;
     }
 
     return <BreadcrumbPage>Dashboard</BreadcrumbPage>
