@@ -188,7 +188,7 @@ export function AddCaseDialog({ children, onCaseAdded }: AddCaseDialogProps) {
                 </SelectTrigger>
                 <SelectContent>
                     {advocates.map(a => (
-                        <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                        <SelectItem key={a.id} value={String(a.id)}>{a.full_name}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>
