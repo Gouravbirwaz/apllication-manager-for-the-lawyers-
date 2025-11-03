@@ -59,7 +59,7 @@ export const columns: ColumnDef<Case>[] = [
     header: "Lead Lawyer",
     cell: ({ row }) => {
       const lawyer = row.original.lawyer;
-      return <div>{lawyer?.full_name || 'N/A'}</div>;
+      return <div>{lawyer?.name || 'N/A'}</div>;
     },
   },
   {

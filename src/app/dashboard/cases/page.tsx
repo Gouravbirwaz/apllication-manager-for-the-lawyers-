@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { PlusCircle } from 'lucide-react';
@@ -30,7 +31,7 @@ export default function CasesPage() {
     try {
       // Fetch cases and users in parallel
       const [casesResponse, usersResponse] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/with-clients`, {
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         }),
         fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
@@ -58,7 +59,7 @@ export default function CasesPage() {
         title: c.case_title,
         next_hearing: c.next_hearing ? new Date(c.next_hearing) : undefined,
         filing_date: new Date(c.created_at),
-        lawyer: c.lawyer_id ? usersMap.get(c.lawyer_id) : undefined,
+        lawyer: c.advocate_id ? usersMap.get(c.advocate_id) : undefined,
       }));
       
       setCases(transformedCases);
