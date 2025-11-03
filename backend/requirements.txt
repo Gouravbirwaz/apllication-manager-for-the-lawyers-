@@ -1,0 +1,27 @@
+# --- Core Flask Framework ---
+flask==3.0.3
+flask_sqlalchemy==3.1.1
+sqlalchemy==2.0.34
+flask_login==0.6.3
+flask_migrate==4.0.7
+flask_cors==4.0.1
+
+# --- Authentication & Security ---
+werkzeug==3.0.4
+pymysql
+
+# --- Database & MySQL Support ---
+mysqlclient==2.2.4
+
+cryptography==42.0.5
+
+# --- Environment Config & Utilities ---
+python-dotenv==1.0.1
+
+
+# --- Production Server ---
+gunicorn==23.0.0
+
+# --- Optional (Testing & HTTP Requests) ---
+
+requests==2.32.3
