@@ -31,32 +31,18 @@ export function LoginForm() {
 
       const loginData = await loginResponse.json();
 
-      if (loginResponse.ok) {
+      if (loginResponse.ok && loginData && loginData.id) {
         toast({
           title: 'Login Successful',
-          description: 'Fetching your details...',
+          description: 'Welcome back!',
         });
-
-        // After successful login, fetch the user's full details using their email.
-        // This assumes an endpoint exists to get a user by their email.
-        const userApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/user_by_email/${email}`;
-        const userResponse = await fetch(userApiUrl, {
-          headers: { 'ngrok-skip-browser-warning': 'true' },
-        });
-
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          if (userData && userData.id) {
-             // Store user ID in session storage to persist login state
-            sessionStorage.setItem('userId', userData.id);
-            // Redirect to dashboard after successfully getting user details
-             setTimeout(() => router.push('/dashboard'), 500);
-          } else {
-             throw new Error('Could not retrieve user details after login.');
-          }
-        } else {
-           throw new Error('Failed to fetch user details after successful login.');
-        }
+        
+        // Store user ID in session storage to persist login state
+        sessionStorage.setItem('userId', loginData.id);
+        
+        // Redirect to dashboard after successfully getting user details
+        // A small delay can help ensure session storage is set before navigation.
+        setTimeout(() => router.push('/dashboard'), 300);
 
       } else {
         toast({
