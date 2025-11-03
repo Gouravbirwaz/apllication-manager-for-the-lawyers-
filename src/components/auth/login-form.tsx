@@ -8,19 +8,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import type { User } from '@/lib/types';
 
-async function fetchUserByEmail(email: string): Promise<{ id: string } | null> {
+async function getUserByEmail(email: string): Promise<User | null> {
   try {
-    const userApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/user_by_email/${email}`;
-    const response = await fetch(userApiUrl, {
+    const usersApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`;
+    const response = await fetch(usersApiUrl, {
       headers: { 'ngrok-skip-browser-warning': 'true' },
     });
     if (response.ok) {
-      return await response.json();
+      const users: User[] = await response.json();
+      const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      return foundUser || null;
     }
     return null;
   } catch (error) {
-    console.error("Failed to fetch user by email:", error);
+    console.error("Failed to fetch users:", error);
     return null;
   }
 }
@@ -47,7 +50,7 @@ export function LoginForm() {
 
       if (loginResponse.ok) {
         // Login successful, now fetch user details to get the ID
-        const userData = await fetchUserByEmail(email);
+        const userData = await getUserByEmail(email);
 
         if (userData && userData.id) {
             toast({
@@ -56,10 +59,10 @@ export function LoginForm() {
             });
             
             // Store user ID in session storage to persist login state
-            sessionStorage.setItem('userId', userData.id);
+            sessionStorage.setItem('userId', String(userData.id));
             
             // Redirect to dashboard
-            setTimeout(() => router.push('/dashboard'), 300);
+            router.push('/dashboard');
         } else {
             throw new Error('Login succeeded but failed to retrieve user details.');
         }
