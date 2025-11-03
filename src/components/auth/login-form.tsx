@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -30,15 +31,14 @@ export function LoginForm() {
 
       const data = await response.json();
 
-      const userId = data.id || data.user?.id;
-
-      if (response.ok && userId) {
+      // Check directly for the 'id' in the response data.
+      if (response.ok && data.id) {
         toast({
           title: 'Success',
           description: data.message || 'Logged in successfully.',
         });
         // Store user ID in session storage to persist login state
-        sessionStorage.setItem('userId', userId);
+        sessionStorage.setItem('userId', data.id);
         
         // Add a small delay to allow session/cookie to be set before redirecting
         // and force a reload to re-trigger UserContext fetch
