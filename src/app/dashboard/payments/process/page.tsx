@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ function PaymentProcessing() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const paymentIds = searchParams.getAll('paymentIds');
+    const paymentIds = useMemo(() => searchParams.getAll('paymentIds'), [searchParams]);
     const amount = searchParams.get('amount');
     const totalAmount = Number(amount) || 0;
 
