@@ -11,6 +11,7 @@ export interface User {
   organization?: string;
   created_at: string;
   updated_at: string;
+  total_case_handled?: number;
   // Fields from old mock data, can be cleaned up later
   role?: UserRole;
   photo_url?: string;

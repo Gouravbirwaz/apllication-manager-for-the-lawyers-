@@ -34,6 +34,16 @@ export function AddPaymentDialog({ children, advocates, onPaymentAdded }: AddPay
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
+  const handleAdvocateChange = (id: string) => {
+    setAdvocateId(id);
+    const selectedAdvocate = advocates.find(adv => String(adv.id) === id);
+    if (selectedAdvocate && selectedAdvocate.total_case_handled !== undefined) {
+      setCases(String(selectedAdvocate.total_case_handled));
+    } else {
+      setCases('');
+    }
+  };
+
   const handleSave = async () => {
     if (!advocateId || !amount) {
       toast({
@@ -94,7 +104,7 @@ export function AddPaymentDialog({ children, advocates, onPaymentAdded }: AddPay
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="advocate" className="text-right">Advocate</Label>
-            <Select onValueChange={setAdvocateId} value={advocateId}>
+            <Select onValueChange={handleAdvocateChange} value={advocateId}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select an advocate" />
               </SelectTrigger>
