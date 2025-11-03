@@ -62,7 +62,7 @@ export default function PaymentsPage() {
             advocate_id: String(p.advocate_id),
             name: advocate?.name || 'Unknown Advocate',
             email: advocate?.email || 'N/A',
-            cases: advocate?.total_case_handled || p.cases || 0,
+            cases: advocate?.total_case_handled || 0,
             billable_hours: p.billable_hours || 0,
             status: p.transaction_status ? 'paid' : 'pending',
             total: p.amount || 0,
@@ -80,6 +80,8 @@ export default function PaymentsPage() {
   useEffect(() => {
     if (user?.role === 'main') {
       fetchPayments();
+    } else {
+        setIsLoading(false);
     }
   }, [user]);
 

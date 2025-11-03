@@ -36,7 +36,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (!loggedInUser && users.length > 0) {
             loggedInUser = users[0];
             // Assign a default role if missing
-            if (!loggedInUser.role) {
+            if (!loggedInAwaitedUser.role) {
                 loggedInUser.role = 'lawyer';
             }
         }
