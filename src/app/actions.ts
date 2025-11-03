@@ -93,3 +93,33 @@ export async function updateCaseAction(caseData: Partial<Case>): Promise<{ case:
     return { error: e.message || "Could not update case." };
   }
 }
+
+export async function updatePaymentStatusAction(paymentIds: string[]): Promise<{ success: boolean; } | { error: string; }> {
+    try {
+        const updatePromises = paymentIds.map(id => {
+            const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/${id}`;
+            return fetch(apiUrl, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true',
+                },
+                body: JSON.stringify({ transaction_status: true }),
+            });
+        });
+
+        const responses = await Promise.all(updatePromises);
+
+        for (const response of responses) {
+            if (!response.ok) {
+                const result = await response.json();
+                throw new Error(result.error || `Failed to update payment status for one or more payments.`);
+            }
+        }
+
+        return { success: true };
+    } catch (e: any) {
+        console.error(e);
+        return { error: e.message || "Could not update payment statuses." };
+    }
+}

@@ -11,6 +11,7 @@ import { useState } from 'react';
 import type { AdvocatePayment, User } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { updatePaymentStatusAction } from '@/app/actions';
 
 function PaymentProcessing() {
     const searchParams = useSearchParams();
@@ -82,15 +83,26 @@ function PaymentProcessing() {
     const handleConfirmPayment = async () => {
         setIsProcessing(true);
 
-        // Simulate API call to a payment gateway like Stripe
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // 1. Simulate API call to a payment gateway like Stripe
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // 2. Update payment status on our backend
+        const result = await updatePaymentStatusAction(paymentIds);
 
-        // Here you would also update the status on your own backend
-        // For now, we'll just simulate success
-        
         setIsProcessing(false);
+
+        if (result.error) {
+             toast({
+                title: "Payment Update Failed",
+                description: result.error,
+                variant: 'destructive'
+            });
+            // Keep the user on the page to allow them to retry if needed.
+            return;
+        }
+
+        // 3. Show success and redirect
         setIsComplete(true);
-        
         toast({
             title: "Payment Successful",
             description: `Successfully paid ${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalAmount)}.`,
