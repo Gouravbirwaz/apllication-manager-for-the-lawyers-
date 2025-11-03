@@ -30,30 +30,30 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const loggedInUserId = sessionStorage.getItem('userId');
         let userToSet = null;
 
-        if (loggedInUserId) {
-          // A user is logged in, fetch their specific data
-          const userApiUrl = `${apiBaseUrl}/get/user/${loggedInUserId}`;
-          const response = await fetch(userApiUrl, {
-            headers: { 'ngrok-skip-browser-warning': 'true' },
-          });
-          if (response.ok) {
-            userToSet = await response.json();
-          } else {
-             console.error(`Failed to fetch user with ID ${loggedInUserId}`);
-             sessionStorage.removeItem('userId'); // Clear invalid ID
+        // Always fetch all users to find the correct one, for both logged-in and default states.
+        const allUsersApiUrl = `${apiBaseUrl}/get/all_users`;
+        const response = await fetch(allUsersApiUrl, {
+          headers: { 'ngrok-skip-browser-warning': 'true' },
+        });
+
+        if (response.ok) {
+          const users: User[] = await response.json();
+          
+          if (loggedInUserId) {
+            // A user is logged in, find their specific data from the list
+            userToSet = users.find(u => String(u.id) === loggedInUserId) || null;
+            if (!userToSet) {
+              console.error(`Logged in user with ID ${loggedInUserId} not found in user list.`);
+              sessionStorage.removeItem('userId'); // Clear invalid ID
+            }
+          } 
+          
+          if (!userToSet) {
+            // Fallback for when no one is logged in: try to get the 'main' user for default view
+            userToSet = users.find(u => u.role === 'main') || null;
           }
-        } 
-        
-        if (!userToSet) {
-          // Fallback for when no one is logged in: try to get the 'main' user for default view
-          const allUsersApiUrl = `${apiBaseUrl}/get/all_users`;
-          const response = await fetch(allUsersApiUrl, {
-            headers: { 'ngrok-skip-browser-warning': 'true' },
-          });
-           if (response.ok) {
-              const users: User[] = await response.json();
-              userToSet = users.find(u => u.role === 'main') || null;
-           }
+        } else {
+            console.error("Failed to fetch user list.");
         }
         
         setUser(userToSet);
