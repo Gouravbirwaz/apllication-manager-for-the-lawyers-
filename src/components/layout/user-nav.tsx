@@ -41,7 +41,7 @@ export function UserNav() {
     );
   }
 
-  const userName = user.name || user.full_name || 'User';
+  const userName = user.full_name || user.name || 'User';
   const userEmail = user.email || 'No email';
 
   const initials = userName

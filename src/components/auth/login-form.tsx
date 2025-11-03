@@ -19,8 +19,8 @@ export function LoginForm() {
   const handleSignIn = async () => {
     setIsLoading(true);
     try {
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/login`;
-      const response = await fetch(apiUrl, {
+      const loginApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/login`;
+      const loginResponse = await fetch(loginApiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -29,32 +29,46 @@ export function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const loginData = await loginResponse.json();
 
-      // Check directly for the 'id' in the response data.
-      if (response.ok && data.id) {
+      if (loginResponse.ok) {
         toast({
-          title: 'Success',
-          description: data.message || 'Logged in successfully.',
+          title: 'Login Successful',
+          description: 'Fetching your details...',
         });
-        // Store user ID in session storage to persist login state
-        sessionStorage.setItem('userId', data.id);
-        
-        // Add a small delay to allow session/cookie to be set before redirecting
-        // and force a reload to re-trigger UserContext fetch
-        setTimeout(() => router.push('/dashboard'), 500);
+
+        // After successful login, fetch the user's full details using their email.
+        // This assumes an endpoint exists to get a user by their email.
+        const userApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get/user_by_email/${email}`;
+        const userResponse = await fetch(userApiUrl, {
+          headers: { 'ngrok-skip-browser-warning': 'true' },
+        });
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          if (userData && userData.id) {
+             // Store user ID in session storage to persist login state
+            sessionStorage.setItem('userId', userData.id);
+            // Redirect to dashboard after successfully getting user details
+             setTimeout(() => router.push('/dashboard'), 500);
+          } else {
+             throw new Error('Could not retrieve user details after login.');
+          }
+        } else {
+           throw new Error('Failed to fetch user details after successful login.');
+        }
 
       } else {
         toast({
           title: 'Login Failed',
-          description: data.error || 'Invalid credentials.',
+          description: loginData.error || 'Invalid credentials.',
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
+        description: error.message || 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
     } finally {
