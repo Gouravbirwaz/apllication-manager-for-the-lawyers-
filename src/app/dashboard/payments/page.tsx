@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { AdvocatePayment } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 
-const mockAdvocatePayments: AdvocatePayment[] = [
+export const mockAdvocatePayments: AdvocatePayment[] = [
     { id: 'adv-001', name: 'Aditi Sharma', email: 'a.sharma@nyayadeep.pro', cases: 3, hours: 45, rate: 2500, total: 112500, status: 'pending' },
     { id: 'adv-002', name: 'Vikram Rao', email: 'v.rao@nyayadeep.pro', cases: 5, hours: 72, rate: 3000, total: 216000, status: 'pending' },
     { id: 'adv-003', name: 'Priya Singh', email: 'p.singh@nyayadeep.pro', cases: 2, hours: 20, rate: 1500, total: 30000, status: 'paid' },
