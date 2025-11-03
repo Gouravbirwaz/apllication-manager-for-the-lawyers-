@@ -1,23 +1,25 @@
 
 'use client';
 
-import { Suspense, useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, CreditCard, Loader2, User, Users } from 'lucide-react';
-import { useState } from 'react';
-import type { AdvocatePayment, User } from '@/lib/types';
+import { CheckCircle, CreditCard, Loader2, User, Users, Lock } from 'lucide-react';
+import type { AdvocatePayment, User as Advocate } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { updatePaymentStatusAction } from '@/app/actions';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 function PaymentProcessing() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { toast } = useToast();
     
+    const [password, setPassword] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
     const [paymentsToProcess, setPaymentsToProcess] = useState<AdvocatePayment[]>([]);
@@ -50,7 +52,7 @@ function PaymentProcessing() {
                 if (!usersResponse.ok) throw new Error("Failed to fetch users");
 
                 const allPayments: any[] = await paymentsResponse.json();
-                const allUsers: User[] = await usersResponse.json();
+                const allUsers: Advocate[] = await usersResponse.json();
                 const usersMap = new Map(allUsers.map(u => [u.id, u]));
 
                 const filteredPayments = allPayments
@@ -62,7 +64,7 @@ function PaymentProcessing() {
                             advocate_id: String(p.advocate_id),
                             name: advocate?.name || 'Unknown Advocate',
                             email: advocate?.email || 'N/A',
-                            cases: p.cases || 0,
+                            cases: advocate?.total_case_handled || p.cases || 0,
                             billable_hours: p.billable_hours || 0,
                             status: p.transaction_status ? 'paid' : 'pending',
                             total: p.amount || 0,
@@ -81,6 +83,16 @@ function PaymentProcessing() {
 
 
     const handleConfirmPayment = async () => {
+        // --- Password Check ---
+        if (password !== 'Gourav@123') {
+            toast({
+                title: "Incorrect Password",
+                description: "The password you entered is incorrect. Please try again.",
+                variant: 'destructive'
+            });
+            return;
+        }
+
         setIsProcessing(true);
 
         // 1. Simulate API call to a payment gateway like Stripe
@@ -145,7 +157,7 @@ function PaymentProcessing() {
         <>
             <CardHeader>
                 <CardTitle className="font-headline text-2xl">Confirm Payment</CardTitle>
-                <CardDescription>Review the details below and confirm to process the payment. This is where a Stripe integration would be.</CardDescription>
+                <CardDescription>Review the details and enter your password to authorize this transaction.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="text-center">
@@ -172,14 +184,25 @@ function PaymentProcessing() {
                     )}
                 </div>
 
-                 <div className="flex items-center justify-center p-6 border-2 border-dashed rounded-lg">
-                    <p className="text-muted-foreground text-center">
-                        [Stripe Checkout Component Placeholder]
-                    </p>
+                <div className="space-y-2">
+                    <Label htmlFor="password">
+                        <div className="flex items-center gap-2">
+                            <Lock className="h-4 w-4" />
+                            Confirm Password
+                        </div>
+                    </Label>
+                    <Input
+                        id="password"
+                        type="password"
+                        placeholder="Enter your password to confirm"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        disabled={isProcessing}
+                    />
                 </div>
             </CardContent>
             <CardFooter>
-                <Button className="w-full" onClick={handleConfirmPayment} disabled={isProcessing || totalAmount === 0}>
+                <Button className="w-full" onClick={handleConfirmPayment} disabled={isProcessing || totalAmount === 0 || !password}>
                     {isProcessing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</> : <><CreditCard className="mr-2 h-4 w-4" /> Confirm & Pay</>}
                 </Button>
             </CardFooter>
