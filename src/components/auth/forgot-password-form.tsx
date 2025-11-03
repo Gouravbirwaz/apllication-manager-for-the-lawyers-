@@ -1,31 +1,37 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
-export function LoginForm() {
+export function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
   const { toast } = useToast();
+  const router = useRouter();
 
-  const handleSignIn = async () => {
+  const handlePasswordReset = async () => {
+    if (!email) {
+      toast({
+        title: 'Error',
+        description: 'Please enter your email address.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setIsLoading(true);
     try {
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/login`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/forgot-password`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email }),
       });
 
       const data = await response.json();
@@ -33,14 +39,13 @@ export function LoginForm() {
       if (response.ok) {
         toast({
           title: 'Success',
-          description: data.message || 'Logged in successfully.',
+          description: data.message || 'If an account exists for that email, a temporary password has been sent.',
         });
-        // Add a small delay to allow session/cookie to be set before redirecting
-        setTimeout(() => router.push('/dashboard'), 500);
+        router.push('/login');
       } else {
         toast({
-          title: 'Login Failed',
-          description: data.error || 'Invalid credentials.',
+          title: 'Error',
+          description: data.error || 'Could not process request.',
           variant: 'destructive',
         });
       }
@@ -70,25 +75,8 @@ export function LoginForm() {
           suppressHydrationWarning
         />
       </div>
-      <div className="grid gap-2">
-        <div className="flex items-center">
-          <Label htmlFor="password">Password</Label>
-          <Link href="/forgot-password" className="ml-auto inline-block text-sm underline">
-            Forgot your password?
-          </Link>
-        </div>
-        <Input
-          id="password"
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={isLoading}
-          suppressHydrationWarning
-        />
-      </div>
-      <Button onClick={handleSignIn} disabled={isLoading} className="w-full" suppressHydrationWarning>
-        {isLoading ? 'Signing In...' : 'Sign In'}
+      <Button onClick={handlePasswordReset} disabled={isLoading} className="w-full" suppressHydrationWarning>
+        {isLoading ? 'Sending...' : 'Send Temporary Password'}
       </Button>
     </div>
   );
