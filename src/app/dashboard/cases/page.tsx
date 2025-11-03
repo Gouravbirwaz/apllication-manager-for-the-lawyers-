@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DataTable } from './components/data-table';
 import { columns } from './components/columns';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Case } from '@/lib/types';
+import type { Case, User } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { AddCaseDialog } from '@/components/cases/add-case-dialog';
@@ -28,24 +28,37 @@ export default function CasesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/with-clients`;
-      const response = await fetch(apiUrl, {
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch cases. Status: ${response.status}`);
-      }
-      const data: any[] = await response.json();
+      // Fetch cases and users in parallel
+      const [casesResponse, usersResponse] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/with-clients`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        })
+      ]);
 
-      // Data transformation to match frontend types
-      const transformedCases: Case[] = data.map(c => ({
+      if (!casesResponse.ok) {
+        throw new Error(`Failed to fetch cases. Status: ${casesResponse.status}`);
+      }
+      if (!usersResponse.ok) {
+        // Non-fatal, we can still show cases without lawyer names
+        console.error('Failed to fetch users');
+      }
+
+      const casesData: any[] = await casesResponse.json();
+      const usersData: User[] = await usersResponse.json();
+      
+      const usersMap = new Map(usersData.map(user => [user.id, user]));
+
+      // Data transformation to match frontend types and link lawyers
+      const transformedCases: Case[] = casesData.map(c => ({
         ...c,
-        case_id: c.id.toString(), // For component key and linking
-        title: c.case_title, // For Data Table search
+        case_id: c.id.toString(),
+        title: c.case_title,
         next_hearing: c.next_hearing ? new Date(c.next_hearing) : undefined,
-        filing_date: new Date(c.created_at)
+        filing_date: new Date(c.created_at),
+        lawyer: c.lawyer_id ? usersMap.get(c.lawyer_id) : undefined,
       }));
       
       setCases(transformedCases);
@@ -85,7 +98,7 @@ export default function CasesPage() {
              <Table>
                 <TableHeader>
                   <TableRow>
-                    {[...Array(5)].map((_, i) => (
+                    {[...Array(6)].map((_, i) => (
                       <TableHead key={i}><Skeleton className="h-5 w-24" /></TableHead>
                     ))}
                   </TableRow>
@@ -93,7 +106,7 @@ export default function CasesPage() {
                 <TableBody>
                   {[...Array(10)].map((_, i) => (
                      <TableRow key={i}>
-                        {[...Array(5)].map((_, j) => (
+                        {[...Array(6)].map((_, j) => (
                           <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>
                         ))}
                       </TableRow>

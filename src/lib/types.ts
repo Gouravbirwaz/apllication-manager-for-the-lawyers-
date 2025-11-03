@@ -33,12 +33,13 @@ export interface Case {
   created_at: string;
   updated_at: string;
   client: User;
-  lawyer?: User;
   lawyer_id?: number;
+  // Fields for component compatibility
   case_id: string; // for compatibility with existing components
   title: string; // for compatibility with existing components
   filing_date: Date; // for compatibility
   description?: string;
+  lawyer?: User; // This will be populated manually after fetching
 }
 
 export interface Document {

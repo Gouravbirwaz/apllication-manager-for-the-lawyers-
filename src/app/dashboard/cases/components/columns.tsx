@@ -47,16 +47,19 @@ export const columns: ColumnDef<Case>[] = [
     },
   },
   {
-    accessorKey: "case_type",
-    header: "Type",
-    cell: ({ row }) => <div className="capitalize">{row.getValue("case_type")}</div>
-  },
-  {
     accessorKey: "client",
     header: "Client",
     cell: ({ row }) => {
       const client = row.getValue("client") as Case['client'];
       return <div>{client?.full_name || 'N/A'}</div>;
+    },
+  },
+   {
+    accessorKey: "lawyer",
+    header: "Lead Lawyer",
+    cell: ({ row }) => {
+      const lawyer = row.original.lawyer;
+      return <div>{lawyer?.full_name || 'N/A'}</div>;
     },
   },
   {
