@@ -46,3 +46,49 @@ export async function updateCaseStatusAction(caseId: string, status: string): Pr
     return { error: e.message || "Could not update case status." };
   }
 }
+
+export async function deleteCaseAction(caseId: string): Promise<{ success: boolean } | { error: string }> {
+  try {
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${caseId}`;
+    const response = await fetch(apiUrl, {
+      method: 'DELETE',
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+      },
+    });
+
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.error || "Failed to delete case.");
+    }
+
+    return { success: true };
+  } catch (e: any) {
+    console.error(e);
+    return { error: e.message || "Could not delete case." };
+  }
+}
+
+export async function updateCaseAction(caseData: Partial<Case>): Promise<{ case: Case } | { error: string }> {
+  if (!caseData.id) return { error: "Case ID is missing." };
+  try {
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${caseData.id}`;
+    const response = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+      },
+      body: JSON.stringify(caseData),
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "Failed to update case.");
+    }
+    return { case: result.case };
+  } catch (e: any) {
+    console.error(e);
+    return { error: e.message || "Could not update case." };
+  }
+}

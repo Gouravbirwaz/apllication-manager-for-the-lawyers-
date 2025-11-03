@@ -1,11 +1,11 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from './components/data-table';
-import { columns } from './components/columns';
+import { getColumns } from './components/columns';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Case, User } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -78,6 +78,18 @@ export default function CasesPage() {
     // Re-fetch all cases to ensure data is fresh from the server
     fetchCases();
   };
+
+  const handleCaseDeleted = (caseId: string) => {
+    setCases(prev => prev.filter(c => c.case_id !== caseId));
+  }
+
+  const handleCaseUpdated = (updatedCase: Case) => {
+    setCases(prev => prev.map(c => c.case_id === updatedCase.case_id ? updatedCase : c));
+     // Re-fetch all cases to ensure data is fresh from the server, especially lawyer info
+    fetchCases();
+  }
+
+  const columns = useMemo(() => getColumns(handleCaseDeleted, handleCaseUpdated), []);
 
   if (isLoading) {
     return (
