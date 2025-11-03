@@ -1,24 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Banknote, CreditCard } from 'lucide-react';
+import { Banknote, CreditCard, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from './components/data-table';
 import { columns } from './components/columns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-
-// This is a mock type. Replace with your actual Advocate/User type.
-export interface AdvocatePayment {
-  id: string;
-  name: string;
-  email: string;
-  cases: number;
-  hours: number;
-  rate: number;
-  total: number;
-  status: 'pending' | 'paid';
-}
+import type { AdvocatePayment } from '@/lib/types';
+import { useRouter } from 'next/navigation';
 
 const mockAdvocatePayments: AdvocatePayment[] = [
     { id: 'adv-001', name: 'Aditi Sharma', email: 'a.sharma@nyayadeep.pro', cases: 3, hours: 45, rate: 2500, total: 112500, status: 'pending' },
@@ -38,10 +28,9 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<AdvocatePayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
-    // In a real app, you would fetch payment data from an API
-    // For now, we use mock data with a simulated delay
     const timer = setTimeout(() => {
       setPayments(mockAdvocatePayments);
       setIsLoading(false);
@@ -49,23 +38,6 @@ export default function PaymentsPage() {
 
     return () => clearTimeout(timer);
   }, []);
-
-  const handlePayAll = () => {
-    toast({
-        title: "Payment Process Initiated",
-        description: "Bulk payment for all pending advocates has been started.",
-    })
-
-    // In a real app, you would make an API call here.
-    // For demonstration, we'll just update the status locally after a delay.
-    setTimeout(() => {
-        setPayments(prev => prev.map(p => p.status === 'pending' ? {...p, status: 'paid'} : p));
-        toast({
-            title: "Payments Successful",
-            description: "All pending payments have been processed.",
-        })
-    }, 2000)
-  };
   
   const totalPayable = payments
     .filter(p => p.status === 'pending')
@@ -115,18 +87,24 @@ export default function PaymentsPage() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
             <CardTitle className="font-headline text-2xl flex items-center gap-2">
                 <CreditCard /> Advocate Payments
             </CardTitle>
-            <CardDescription>Review and process payments for your advocates.</CardDescription>
+            <CardDescription>Review, schedule, and process payments for your advocates.</CardDescription>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <Button size="sm" className="gap-1" onClick={handlePayAll} disabled={totalPayable === 0}>
-              <Banknote className="h-3.5 w-3.5" />
-              Pay All Pending
-            </Button>
+          <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
+             <div className="flex gap-2">
+                <Button size="sm" className="gap-1" onClick={() => toast({ title: "Feature Coming Soon!", description: "Automated payment scheduling is in development."})}>
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  Schedule Payments
+                </Button>
+                <Button size="sm" className="gap-1" onClick={() => router.push('/dashboard/payments/process')} disabled={totalPayable === 0}>
+                  <Banknote className="h-3.5 w-3.5" />
+                  Bulk Pay Pending
+                </Button>
+             </div>
             <p className="text-sm text-muted-foreground">
                 Total Payable: <span className="font-semibold text-primary">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalPayable)}</span>
             </p>

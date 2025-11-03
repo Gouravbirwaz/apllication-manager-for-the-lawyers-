@@ -87,3 +87,15 @@ export interface Notification {
   timestamp: Date;
   read: boolean;
 }
+
+
+export interface AdvocatePayment {
+  id: string;
+  name: string;
+  email: string;
+  cases: number;
+  hours: number;
+  rate: number;
+  total: number;
+  status: 'pending' | 'paid';
+}

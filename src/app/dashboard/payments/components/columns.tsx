@@ -3,6 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal, ArrowUpDown } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,17 +16,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { AdvocatePayment } from "../page"
-import { useToast } from "@/hooks/use-toast"
+import type { AdvocatePayment } from "@/lib/types"
 
 const PayAction = ({ payment }: { payment: AdvocatePayment }) => {
-    const { toast } = useToast();
+    const router = useRouter();
     const handlePay = () => {
-        toast({
-            title: "Processing Payment",
-            description: `Payment for ${payment.name} is being processed.`,
+        // Navigate to a dedicated payment processing page
+        const params = new URLSearchParams({
+            paymentIds: payment.id,
+            amount: String(payment.total),
         });
-        // Here you would typically call an API to process the payment
+        router.push(`/dashboard/payments/process?${params.toString()}`);
     }
     return <DropdownMenuItem onClick={handlePay} disabled={payment.status === 'paid'}>Pay Now</DropdownMenuItem>
 }
