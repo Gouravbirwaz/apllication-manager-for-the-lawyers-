@@ -2,3 +2,8 @@ from .case_model import Case
 from .clinte_model import Client
 from .user_login_model import UserDeatails
 from .payment_model import Payment
+from .Hearings import Hearing
+from .Task import Task
+from .Time_entries import TimeEntry
+from .Documents import Document
+from .Invoices import Invoice
