@@ -200,3 +200,23 @@ export async function deletePaymentAction(paymentId: string): Promise<{ success:
     }
 }
 
+export async function uploadDocumentsAction(caseId: string, formData: FormData): Promise<{ files?: string[] } | { error: string }> {
+  try {
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/upload/${caseId}`;
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+      },
+      body: formData,
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'File upload failed.');
+    }
+    return { files: result.files };
+  } catch (e: any) {
+    console.error(e);
+    return { error: e.message || 'Could not upload files.' };
+  }
+}

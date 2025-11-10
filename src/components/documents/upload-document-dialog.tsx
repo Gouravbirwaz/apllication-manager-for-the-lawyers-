@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -13,106 +14,96 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Document } from '@/lib/types';
-import { mockUsers } from '@/lib/mock-data';
+import { uploadDocumentsAction } from '@/app/actions';
 
 interface UploadDocumentDialogProps {
   caseId: string;
-  onDocumentUploaded: (document: Document) => void;
+  onDocumentUploaded: (document?: any) => void;
   children: React.ReactNode;
 }
 
 export function UploadDocumentDialog({ caseId, onDocumentUploaded, children }: UploadDocumentDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<FileList | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
+    if (e.target.files) {
+      setFiles(e.target.files);
     }
   };
 
   const handleUpload = async () => {
-    if (!file || !title.trim()) {
+    if (!files || files.length === 0) {
       toast({
-        title: 'Missing Information',
-        description: 'Please provide a title and select a file.',
+        title: 'No Files Selected',
+        description: 'Please select one or more files to upload.',
         variant: 'destructive',
       });
       return;
     }
 
     setIsUploading(true);
-    // Simulate upload delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+        formData.append('documents', files[i]);
+    }
 
-    const fileType = file.name.split('.').pop() as 'pdf' | 'docx' | 'image';
-    const newDocument: Document = {
-      doc_id: `doc-${Date.now()}`,
-      case_id: caseId,
-      title: title,
-      file_url: '#', // Placeholder URL
-      file_type: ['pdf', 'docx', 'image'].includes(fileType) ? fileType : 'pdf',
-      uploaded_at: new Date(),
-      version: 1,
-      uploaded_by: mockUsers.find(u => u.role === 'lawyer')?.uid || 'user-lawyer-1',
-    };
+    const result = await uploadDocumentsAction(caseId, formData);
     
     setIsUploading(false);
-    onDocumentUploaded(newDocument);
-    
-    toast({
-      title: 'Upload Successful',
-      description: `"${newDocument.title}" has been added to the case.`,
-    });
-    
-    setIsOpen(false);
-    resetForm();
+
+    if (result.error) {
+        toast({
+            title: 'Upload Failed',
+            description: result.error,
+            variant: 'destructive',
+        });
+    } else {
+        toast({
+            title: 'Upload Successful',
+            description: `${result.files?.length || 0} document(s) have been added to the case.`,
+        });
+        onDocumentUploaded();
+        setIsOpen(false);
+        resetForm();
+    }
   };
 
   const resetForm = () => {
-    setTitle('');
-    setFile(null);
+    setFiles(null);
+    const fileInput = document.getElementById('files') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+        setIsOpen(open)
+        if (!open) resetForm();
+    }}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Upload New Document</DialogTitle>
+          <DialogTitle>Upload Documents</DialogTitle>
           <DialogDescription>
-            Select a file and give it a title to add it to the case.
+            Select one or more files to add to this case. The filename will be used as the document title.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="title" className="text-right">
-              Document Title
+            <Label htmlFor="files" className="text-right">
+              Files
             </Label>
             <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="col-span-3"
-              placeholder="e.g., Plaintiff's Affidavit"
-              disabled={isUploading}
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="file" className="text-right">
-              File
-            </Label>
-            <Input
-              id="file"
+              id="files"
               type="file"
+              multiple
               onChange={handleFileChange}
               className="col-span-3 file:text-primary file:font-medium"
               disabled={isUploading}

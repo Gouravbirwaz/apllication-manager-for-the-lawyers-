@@ -1,6 +1,8 @@
+
 'use client';
 
 import { notFound, useParams } from "next/navigation";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -20,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockHearings, mockTasks, mockUsers } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FilePlus2, Upload, CalendarPlus, Wand2, PlusCircle, Video } from "lucide-react";
+import { FilePlus2, Upload, CalendarPlus, Wand2, PlusCircle, Video, FileText, ExternalLink } from "lucide-react";
 import { DocumentAnalysis } from "@/components/document-analysis";
 import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
@@ -77,68 +79,70 @@ export default function CaseDetailPage() {
   const [caseDocs, setCaseDocs] = useState<Document[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   
-  // Hearings and Tasks will still use mock data for now
   const [caseHearings, setCaseHearings] = useState<Hearing[]>([]);
   const [caseTasks, setCaseTasks] = useState<Task[]>([]);
 
   const [analysis, setAnalysis] = useState<LegalDocumentAnalysisOutput | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+
+  const fetchCaseDetails = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+        const [caseResponse, usersResponse, docsResponse] = await Promise.all([
+            fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${id}`, {
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+            }),
+            fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+            }),
+             fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/case/${id}/documents`, {
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+            })
+        ]);
+
+        if (caseResponse.status === 404) {
+             notFound();
+             return;
+        }
+        if (!caseResponse.ok) throw new Error(`Failed to fetch case details. Status: ${caseResponse.status}`);
+        if (!usersResponse.ok) console.error('Failed to fetch users');
+        if (!docsResponse.ok) console.error('Failed to fetch documents');
+
+        const caseJson = await caseResponse.json();
+        const usersJson = await usersResponse.json();
+        const docsJson = await docsResponse.json();
+        
+        const users = usersJson.users || [];
+        const lawyer = users.find((u: User) => u.id === caseJson.lawyer_id);
+
+        const transformedCase: Case = {
+            ...caseJson,
+            case_id: caseJson.id.toString(),
+            title: caseJson.case_title,
+            filing_date: new Date(caseJson.created_at),
+            next_hearing: caseJson.next_hearing ? new Date(caseJson.next_hearing) : undefined,
+            lawyer: lawyer
+        };
+        setCaseData(transformedCase);
+
+        if(docsJson.documents) {
+            setCaseDocs(docsJson.documents);
+        }
+
+        // TODO: Replace with real endpoints when available
+        setCaseHearings(mockHearings.filter(h => h.case_id === transformedCase.case_id));
+        setCaseTasks(mockTasks.filter(t => t.case_id === transformedCase.case_id));
+
+    } catch (err: any) {
+        setError(err.message || 'An unexpected error occurred.');
+    } finally {
+        setIsLoading(false);
+    }
+  };
   
   useEffect(() => {
     if (!id) return;
-    
-    const fetchCaseDetails = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            // Fetch case and all users in parallel
-            const [caseResponse, usersResponse] = await Promise.all([
-                fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${id}`, {
-                    headers: { 'ngrok-skip-browser-warning': 'true' }
-                }),
-                fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
-                    headers: { 'ngrok-skip-browser-warning': 'true' }
-                })
-            ]);
-
-            if (caseResponse.status === 404) {
-                 notFound();
-                 return;
-            }
-            if (!caseResponse.ok) {
-                throw new Error(`Failed to fetch case details. Status: ${caseResponse.status}`);
-            }
-             if (!usersResponse.ok) {
-                // Non-fatal, we can still show the case without the lawyer
-                console.error('Failed to fetch users');
-            }
-
-            const caseJson = await caseResponse.json();
-            const users = await usersResponse.json();
-
-            const lawyer = users.find((u: User) => u.id === caseJson.lawyer_id);
-
-            const transformedCase: Case = {
-                ...caseJson,
-                case_id: caseJson.id.toString(),
-                title: caseJson.case_title,
-                filing_date: new Date(caseJson.created_at),
-                next_hearing: caseJson.next_hearing ? new Date(caseJson.next_hearing) : undefined,
-                lawyer: lawyer
-            };
-            setCaseData(transformedCase);
-
-            // TODO: Replace with real endpoints when available
-            setCaseHearings(mockHearings.filter(h => h.case_id === transformedCase.case_id));
-            setCaseTasks(mockTasks.filter(t => t.case_id === transformedCase.case_id));
-
-        } catch (err: any) {
-            setError(err.message || 'An unexpected error occurred.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    
     fetchCaseDetails();
   }, [id]);
 
@@ -148,7 +152,8 @@ export default function CaseDetailPage() {
   }
 
   const handleDocumentUploaded = (newDocument: Document) => {
-    setCaseDocs(prev => [newDocument, ...prev]);
+    // Instead of adding locally, re-fetch to get the latest list from the server
+    fetchCaseDetails();
   };
   
   const handleTaskAdded = (newTask: Task) => {
@@ -167,20 +172,24 @@ export default function CaseDetailPage() {
       return;
     }
 
-    const documentToAnalyze = caseDocs.find(doc => doc.doc_id === selectedDocId);
-    if (!documentToAnalyze || !documentToAnalyze.summary) {
+    const documentToAnalyze = caseDocs.find(doc => String(doc.id) === selectedDocId);
+    if (!documentToAnalyze) {
        toast({
         title: "Analysis Not Possible",
-        description: "The selected document has no content to analyze.",
+        description: "The selected document could not be found.",
         variant: "destructive",
       });
       return;
     }
 
+    // This is a placeholder for getting document text. In a real app,
+    // you would fetch the document content. For now, we use the filename.
+    const documentText = `Document content for: ${documentToAnalyze.filename}`;
+
     setIsLoadingAnalysis(true);
     setAnalysis(null);
 
-    const result = await analyzeLegalDocumentAction({ documentText: documentToAnalyze.summary });
+    const result = await analyzeLegalDocumentAction({ documentText });
     
     setIsLoadingAnalysis(false);
 
@@ -194,7 +203,7 @@ export default function CaseDetailPage() {
       setAnalysis(result.analysis);
        toast({
         title: "Analysis Complete",
-        description: `Analysis for "${documentToAnalyze.title}" is ready.`,
+        description: `Analysis for "${documentToAnalyze.filename}" is ready.`,
       });
     }
   }
@@ -251,8 +260,6 @@ export default function CaseDetailPage() {
   }
 
   if (!caseData) {
-    // This should ideally not be reached if loading and error states are handled,
-    // but it's a good fallback.
     return notFound();
   }
 
@@ -279,13 +286,12 @@ export default function CaseDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                 <div className="flex items-center gap-2">
-                  <strong>Client:</strong> {caseData.client?.full_name}
+                  <strong>Client:</strong> {caseData.client?.name}
                   <Button variant="outline" size="sm" onClick={handleScheduleMeeting}>
                     <Video className="mr-2 h-4 w-4" /> Schedule Meeting
                   </Button>
                 </div>
                 <div><strong>Lead Lawyer:</strong> {caseData.lawyer?.name || 'N/A'}</div>
-                {/* <div><strong>Court:</strong> {caseData.court_name}</div> */}
                 <div><strong>Filing Date:</strong> {caseData.filing_date.toLocaleDateString()}</div>
                 <div className="flex items-center gap-2">
                   <strong>Status:</strong> 
@@ -318,7 +324,7 @@ export default function CaseDetailPage() {
               <CardHeader className="flex flex-row items-center justify-between">
                  <div>
                     <CardTitle className="font-headline">Documents</CardTitle>
-                    <CardDescription>Select a document below to analyze it with AI.</CardDescription>
+                    <CardDescription>Select a document to analyze or click its title to preview.</CardDescription>
                  </div>
                 
                 <UploadDocumentDialog 
@@ -337,32 +343,53 @@ export default function CaseDetailPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[50px]"></TableHead>
-                        <TableHead>Title</TableHead>
+                        <TableHead>Filename</TableHead>
                         <TableHead>Type</TableHead>
-                        <TableHead>Uploaded</TableHead>
-                        <TableHead>Version</TableHead>
-                        <TableHead className="w-[250px]">Summary</TableHead> 
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {caseDocs.map(doc => (
-                        <TableRow key={doc.doc_id}>
+                      {caseDocs.map(doc => {
+                        const fileType = doc.filename.split('.').pop()?.toLowerCase() || 'file';
+                        return (
+                        <TableRow key={doc.id}>
                           <TableCell>
-                            <RadioGroupItem value={doc.doc_id} id={doc.doc_id} />
+                            <RadioGroupItem value={String(doc.id)} id={String(doc.id)} />
                           </TableCell>
                           <TableCell className="font-medium">
-                             <Label htmlFor={doc.doc_id} className="cursor-pointer">{doc.title}</Label>
+                             <Label htmlFor={String(doc.id)} className="cursor-pointer hover:underline" asChild>
+                               <Link href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/document/${doc.id}/preview`} target="_blank" rel="noopener noreferrer">
+                                {doc.filename}
+                               </Link>
+                             </Label>
                           </TableCell>
-                          <TableCell className="uppercase">{doc.file_type}</TableCell>
-                          <TableCell>{doc.uploaded_at.toLocaleDateString()}</TableCell>
-                          <TableCell>{doc.version}</TableCell>
-                          <TableCell className="text-muted-foreground text-sm truncate max-w-xs">{doc.summary || 'N/A'}</TableCell>
+                          <TableCell className="uppercase text-muted-foreground">
+                            <Badge variant="outline">{fileType}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                             <Button variant="ghost" size="sm" asChild>
+                               <Link href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/document/${doc.id}`}>
+                                  Download
+                               </Link>
+                             </Button>
+                          </TableCell>
                         </TableRow>
-                      ))}
+                      )})}
                       {caseDocs.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                              No documents found for this case. Start by uploading one!
+                          <TableCell colSpan={4} className="h-24 text-center">
+                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                <FileText className="h-8 w-8" />
+                                <span>No documents found for this case.</span>
+                                <UploadDocumentDialog 
+                                  caseId={caseData.case_id} 
+                                  onDocumentUploaded={handleDocumentUploaded}
+                                >
+                                  <Button size="sm" variant="secondary">
+                                    <Upload className="mr-2 h-4 w-4"/> Upload First Document
+                                  </Button>
+                                </UploadDocumentDialog>
+                            </div>
                           </TableCell>
                         </TableRow>
                       )}
@@ -442,16 +469,6 @@ export default function CaseDetailPage() {
           <Card>
               <CardHeader className="flex flex-row justify-between items-center">
                 <CardTitle className="font-headline">Associated Tasks</CardTitle>
-                {/* <AddTaskDialog 
-                  cases={[caseData]}
-                  onTaskAdded={handleTaskAdded}
-                  defaultCaseId={id}
-                >
-                  <Button size="sm">
-                    <PlusCircle className="mr-2 h-4 w-4"/>
-                    Add Task
-                  </Button>
-                </AddTaskDialog> */}
               </CardHeader>
               <CardContent>
                  <Table>

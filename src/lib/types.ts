@@ -1,12 +1,13 @@
+
 import type { Timestamp } from "firebase/firestore";
 
 export type UserRole = "lawyer" | "client" | "assistant" | "admin" | "main";
 
 export interface User {
   id: number;
-  name: string; // Changed from full_name to match backend
+  name: string; 
   email: string;
-  phone_number: string; // Changed from phone
+  phone_number: string; 
   address?: string;
   organization?: string;
   created_at: string;
@@ -46,16 +47,9 @@ export interface Case {
 }
 
 export interface Document {
-  doc_id: string;
-  case_id: string; // Reference to cases.case_id
-  uploaded_by: string; // Reference to users.uid
-  title: string;
-  file_url: string;
-  file_type: "pdf" | "docx" | "image";
-  uploaded_at: Date;
-  version: number;
-  summary?: string;
-  case_title?: string;
+  id: number;
+  filename: string;
+  url: string; // This will be the download/preview URL
 }
 
 export interface Hearing {
