@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockHearings, mockTasks } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FilePlus2, Upload, CalendarPlus, Wand2, Video, FileText, Trash2 } from "lucide-react";
+import { FilePlus2, Upload, CalendarPlus, Wand2, Video, FileText, Trash2, BookText } from "lucide-react";
 import { DocumentAnalysis } from "@/components/document-analysis";
 import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
@@ -98,6 +98,7 @@ export default function CaseDetailPage() {
   const [allUsers, setAllUsers] = useState<User[]>([]);
 
   const [analysis, setAnalysis] = useState<LegalDocumentAnalysisOutput | null>(null);
+  const [extractedText, setExtractedText] = useState<string | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
 
   const fetchCaseAndDocuments = async () => {
@@ -202,6 +203,11 @@ export default function CaseDetailPage() {
     }
   }
 
+  useEffect(() => {
+    setAnalysis(null);
+    setExtractedText(null);
+  }, [selectedDocId]);
+
   const handleAnalyzeDocument = async () => {
     if (!selectedDocId) {
       toast({
@@ -224,6 +230,7 @@ export default function CaseDetailPage() {
   
     setIsLoadingAnalysis(true);
     setAnalysis(null);
+    setExtractedText(null);
   
     try {
       // 1. Fetch the text content from the backend
@@ -237,6 +244,7 @@ export default function CaseDetailPage() {
   
       const textData = await textResponse.json();
       const documentText = textData.documents?.[documentToAnalyze.filename];
+      setExtractedText(documentText || 'No text could be extracted from this document.');
   
       if (!documentText) {
         throw new Error(`Could not find text for "${documentToAnalyze.filename}" in the response.`);
@@ -265,6 +273,7 @@ export default function CaseDetailPage() {
         });
       }
     } catch (error: any) {
+      setExtractedText(`An error occurred while extracting text: ${error.message}`);
       toast({
         title: "Error During Analysis",
         description: error.message || "An unexpected error occurred.",
@@ -524,6 +533,31 @@ export default function CaseDetailPage() {
                     <Wand2 className="mr-2 h-4 w-4" />
                     {isLoadingAnalysis ? "Analyzing..." : "Analyze Selected Document"}
                  </Button>
+
+                 {(isLoadingAnalysis || extractedText) && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="font-headline flex items-center gap-2 text-base">
+                          <BookText className="h-5 w-5" />
+                          Extracted Text
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {isLoadingAnalysis && !extractedText ? (
+                          <div className="space-y-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-3/4" />
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap font-mono">
+                            {extractedText}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
                 <DocumentAnalysis isLoading={isLoadingAnalysis} analysis={analysis} />
               </CardContent>
             </Card>
