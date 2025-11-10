@@ -204,49 +204,76 @@ export default function CaseDetailPage() {
 
   const handleAnalyzeDocument = async () => {
     if (!selectedDocId) {
-       toast({
+      toast({
         title: "No Document Selected",
         description: "Please select a document from the list to analyze.",
         variant: "destructive",
       });
       return;
     }
-
+  
     const documentToAnalyze = caseDocs.find(doc => String(doc.id) === selectedDocId);
-    if (!documentToAnalyze) {
-       toast({
+    if (!documentToAnalyze || !caseData) {
+      toast({
         title: "Analysis Not Possible",
-        description: "The selected document could not be found.",
+        description: "The selected document or case could not be found.",
         variant: "destructive",
       });
       return;
     }
-
-    // This is a placeholder for getting document text. In a real app,
-    // you would fetch the document content. For now, we use the filename.
-    const documentText = `Document content for: ${documentToAnalyze.filename}`;
-
+  
     setIsLoadingAnalysis(true);
     setAnalysis(null);
-
-    const result = await analyzeLegalDocumentAction({ documentText });
-    
-    setIsLoadingAnalysis(false);
-
-    if (result.error) {
+  
+    try {
+      // 1. Fetch the text content from the backend
+      const textResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/extract_text/case_${caseData.id}`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+  
+      if (!textResponse.ok) {
+        throw new Error(`Failed to extract text. Status: ${textResponse.status}`);
+      }
+  
+      const textData = await textResponse.json();
+      const documentText = textData.documents?.[documentToAnalyze.filename];
+  
+      if (!documentText) {
+        throw new Error(`Could not find text for "${documentToAnalyze.filename}" in the response.`);
+      }
+      
+      if (documentText.startsWith('[Unsupported file type]')) {
+        toast({
+            title: "Unsupported File",
+            description: `Cannot analyze this file type. Please select a PDF or TXT file.`,
+            variant: "destructive"
+        });
+        setIsLoadingAnalysis(false);
+        return;
+      }
+  
+      // 2. Send the extracted text to the AI for analysis
+      const result = await analyzeLegalDocumentAction({ documentText });
+  
+      if (result.error) {
+        throw new Error(result.error);
+      } else if (result.analysis) {
+        setAnalysis(result.analysis);
+        toast({
+          title: "Analysis Complete",
+          description: `Analysis for "${documentToAnalyze.filename}" is ready.`,
+        });
+      }
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: result.error,
+        title: "Error During Analysis",
+        description: error.message || "An unexpected error occurred.",
         variant: "destructive",
       });
-    } else if (result.analysis) {
-      setAnalysis(result.analysis);
-       toast({
-        title: "Analysis Complete",
-        description: `Analysis for "${documentToAnalyze.filename}" is ready.`,
-      });
+    } finally {
+      setIsLoadingAnalysis(false);
     }
-  }
+  };
 
   const handleScheduleMeeting = () => {
     if (!caseData?.client || !caseData.client.email) return;
