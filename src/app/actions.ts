@@ -136,7 +136,7 @@ export async function addPaymentAction(paymentData: Omit<AdvocatePayment, 'id' |
             body: JSON.stringify({
               advocate_id: paymentData.advocate_id,
               status: paymentData.status,
-              cases: paymentData.cases,
+              cases: paymentData.case_id,
               billable_hours: paymentData.billable_hours,
               amount: paymentData.total,
               transaction_status: paymentData.status === 'paid',
@@ -162,12 +162,12 @@ export async function updatePaymentAction(paymentId: string, paymentData: Partia
                 'ngrok-skip-browser-warning': 'true',
             },
             body: JSON.stringify({
-              // Map frontend fields to backend fields
-              ...paymentData.advocate_id && { advocate_id: paymentData.advocate_id },
-              ...paymentData.status && { transaction_status: paymentData.status === 'paid' },
-              ...paymentData.cases && { cases: paymentData.cases },
-              ...paymentData.billable_hours && { billable_hours: paymentData.billable_hours },
-              ...paymentData.total && { amount: paymentData.total },
+              advocate_id: paymentData.advocate_id,
+              status: paymentData.status === 'paid' ? 'paid' : 'pending',
+              transaction_status: paymentData.status === 'paid',
+              cases: paymentData.case_id,
+              billable_hours: paymentData.billable_hours,
+              amount: paymentData.total,
             }),
         });
         const result = await response.json();
@@ -230,8 +230,8 @@ export async function deleteDocumentAction(docId: number): Promise<{ success: bo
                 'ngrok-skip-browser-warning': 'true',
             },
         });
-        const result = await response.json();
         if (!response.ok) {
+            const result = await response.json();
             throw new Error(result.error || 'Failed to delete document.');
         }
         return { success: true };

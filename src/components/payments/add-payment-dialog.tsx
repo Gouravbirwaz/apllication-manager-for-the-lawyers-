@@ -29,7 +29,7 @@ interface AddPaymentDialogProps {
 export function AddPaymentDialog({ children, advocates, cases, onPaymentAdded }: AddPaymentDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [advocateId, setAdvocateId] = useState<string | undefined>();
-  const [caseId, setCaseId] = useState<string | undefined>();
+  const [caseId, setCaseId] = useState<number | undefined>();
   const [billableHours, setBillableHours] = useState('');
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<'pending' | 'paid'>('pending');
@@ -50,7 +50,7 @@ export function AddPaymentDialog({ children, advocates, cases, onPaymentAdded }:
     const result = await addPaymentAction({
       advocate_id: advocateId,
       status: status,
-      case_id: Number(caseId),
+      case_id: caseId,
       billable_hours: parseFloat(billableHours) || 0,
       total: parseFloat(amount),
       cases: 1, // This field seems redundant now, defaulting to 1
@@ -110,7 +110,7 @@ export function AddPaymentDialog({ children, advocates, cases, onPaymentAdded }:
           </div>
            <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="case" className="text-right">Case</Label>
-            <Select onValueChange={setCaseId} value={caseId}>
+            <Select onValueChange={(value) => setCaseId(Number(value))} value={caseId ? String(caseId) : undefined}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select a case" />
               </SelectTrigger>

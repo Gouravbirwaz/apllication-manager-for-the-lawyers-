@@ -53,9 +53,17 @@ export default function PaymentsPage() {
 
         const paymentsData: any[] = await paymentsResponse.json();
         const usersData: User[] = await usersResponse.json();
-        const casesData: Case[] = await casesResponse.json();
+        const rawCasesData: any[] = await casesResponse.json();
+
+        const transformedCases: Case[] = rawCasesData.map(c => ({
+          ...c,
+          case_id: c.id.toString(),
+          title: c.case_title,
+          next_hearing: c.next_hearing ? new Date(c.next_hearing) : undefined,
+          filing_date: new Date(c.created_at),
+        }));
         
-        setCases(casesData);
+        setCases(transformedCases);
         setAdvocates(usersData);
         const usersMap = new Map(usersData.map(user => [user.id, user]));
 
@@ -66,11 +74,11 @@ export default function PaymentsPage() {
             advocate_id: String(p.advocate_id),
             name: advocate?.name || 'Unknown Advocate',
             email: advocate?.email || 'N/A',
-            cases: p.cases || advocate?.total_case_handled || 0,
+            cases: p.cases || 0,
             billable_hours: p.billable_hours || 0,
             status: p.transaction_status ? 'paid' : 'pending',
             total: p.amount || 0,
-            case_id: p.case_id
+            case_id: p.case, // Use p.case as the case_id
           };
         });
 

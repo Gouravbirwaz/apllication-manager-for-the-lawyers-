@@ -29,7 +29,7 @@ interface EditPaymentDialogProps {
 
 export function EditPaymentDialog({ isOpen, onOpenChange, payment, advocates, cases, onPaymentUpdated }: EditPaymentDialogProps) {
   const [advocateId, setAdvocateId] = useState(payment.advocate_id);
-  const [caseId, setCaseId] = useState(payment.case_id ? String(payment.case_id) : undefined);
+  const [caseId, setCaseId] = useState(payment.case_id);
   const [billableHours, setBillableHours] = useState(String(payment.billable_hours));
   const [amount, setAmount] = useState(String(payment.total));
   const [status, setStatus] = useState<'pending' | 'paid'>(payment.status);
@@ -39,7 +39,7 @@ export function EditPaymentDialog({ isOpen, onOpenChange, payment, advocates, ca
   useEffect(() => {
     if (isOpen) {
       setAdvocateId(payment.advocate_id);
-      setCaseId(payment.case_id ? String(payment.case_id) : undefined);
+      setCaseId(payment.case_id);
       setBillableHours(String(payment.billable_hours));
       setAmount(String(payment.total));
       setStatus(payment.status);
@@ -105,7 +105,7 @@ export function EditPaymentDialog({ isOpen, onOpenChange, payment, advocates, ca
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="case" className="text-right">Case</Label>
-            <Select onValueChange={setCaseId} value={caseId}>
+            <Select onValueChange={(value) => setCaseId(Number(value))} value={caseId ? String(caseId) : undefined}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select a case" />
               </SelectTrigger>
