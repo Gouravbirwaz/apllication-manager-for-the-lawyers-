@@ -58,7 +58,8 @@ function PaymentProcessing() {
 
                 const allPayments: any[] = await paymentsResponse.json();
                 const allUsers: Advocate[] = await usersResponse.json();
-                const allCases: Case[] = await casesResponse.json();
+                const allCases: any[] = await casesResponse.json();
+                
                 const usersMap = new Map(allUsers.map(u => [u.id, u]));
                 const casesMap = new Map(allCases.map(c => [c.id, c]));
 
@@ -66,19 +67,20 @@ function PaymentProcessing() {
                     .filter(p => paymentIds.includes(String(p.id)))
                     .map(p => {
                         const advocate = usersMap.get(p.advocate_id);
-                        const caseForPayment = p.case_id ? casesMap.get(p.case_id) : undefined;
+                        // The backend returns 'case' for the id, which is used here as 'p.case'
+                        const caseForPayment = p.case ? casesMap.get(p.case) : undefined;
                         return {
                             id: String(p.id),
                             advocate_id: String(p.advocate_id),
                             name: advocate?.name || 'Unknown Advocate',
                             email: advocate?.email || 'N/A',
-                            cases: advocate?.total_case_handled || p.cases || 0,
+                            cases: p.cases || 0,
                             billable_hours: p.billable_hours || 0,
                             status: p.transaction_status ? 'paid' : 'pending',
                             total: p.amount || 0,
-                            case_id: p.case_id,
+                            case_id: caseForPayment?.id,
                             client_id: caseForPayment?.client?.id,
-                        }
+                        } as AdvocatePayment
                     });
                 
                 setPaymentsToProcess(filteredPayments);
@@ -267,3 +269,5 @@ export default function ProcessPaymentPage() {
     </div>
   );
 }
+
+    
