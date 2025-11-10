@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -27,8 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockCases, mockUsers } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/contexts/UserContext';
+import { useEffect } from 'react';
 
 interface AddTaskDialogProps {
   children: React.ReactNode;
@@ -44,7 +46,30 @@ export function AddTaskDialog({ children, cases, onTaskAdded, defaultCaseId }: A
   const [selectedCaseId, setSelectedCaseId] = useState<string | undefined>(defaultCaseId);
   const [assignedTo, setAssignedTo] = useState<string | undefined>();
   const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const { user } = useUser();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+        if (isOpen && user) {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' },
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setAvailableUsers(data.users || []);
+                } else {
+                    console.error("Failed to fetch users for task assignment");
+                }
+            } catch (e) {
+                console.error("Error fetching users:", e);
+            }
+        }
+    };
+    fetchUsers();
+  }, [isOpen, user]);
 
   const handleAddTask = () => {
     if (!title || !selectedCaseId || !assignedTo || !dueDate) {
@@ -90,7 +115,6 @@ export function AddTaskDialog({ children, cases, onTaskAdded, defaultCaseId }: A
       }
   }
 
-  const availableUsers = mockUsers.filter(u => u.role === 'assistant' || u.role === 'lawyer');
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -138,7 +162,7 @@ export function AddTaskDialog({ children, cases, onTaskAdded, defaultCaseId }: A
                 </SelectTrigger>
                 <SelectContent>
                     {availableUsers.map(u => (
-                        <SelectItem key={u.uid} value={u.uid}>{u.full_name}</SelectItem>
+                        <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>
@@ -180,3 +204,5 @@ export function AddTaskDialog({ children, cases, onTaskAdded, defaultCaseId }: A
     </Dialog>
   );
 }
+
+    

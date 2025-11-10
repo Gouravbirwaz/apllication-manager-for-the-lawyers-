@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams } from "next/navigation";
@@ -19,10 +20,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockHearings, mockTasks, mockUsers } from "@/lib/mock-data";
+import { mockHearings, mockTasks } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FilePlus2, Upload, CalendarPlus, Wand2, PlusCircle, Video, FileText, ExternalLink } from "lucide-react";
+import { FilePlus2, Upload, CalendarPlus, Wand2, Video, FileText } from "lucide-react";
 import { DocumentAnalysis } from "@/components/document-analysis";
 import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
@@ -31,7 +32,7 @@ import type { Hearing, Document, Task, Case, User, CaseStatus } from "@/lib/type
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { analyzeLegalDocumentAction, updateCaseStatusAction } from "@/app/actions";
+import { analyzeLegalDocumentAction, updateCaseStatusAction, uploadDocumentsAction } from "@/app/actions";
 import type { LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
 import { AddTaskDialog } from "@/components/tasks/add-task-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -83,28 +84,23 @@ export default function CaseDetailPage() {
   
   const [caseHearings, setCaseHearings] = useState<Hearing[]>([]);
   const [caseTasks, setCaseTasks] = useState<Task[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
 
   const [analysis, setAnalysis] = useState<LegalDocumentAnalysisOutput | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
 
-  const fetchCaseDetails = async () => {
+  const fetchCaseAndDocuments = async () => {
     setIsLoading(true);
     setError(null);
     try {
-        const fetchPromises = [
+        const [caseResponse, docsResponse] = await Promise.all([
             fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${id}`, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
             }),
-            // Conditionally fetch users only if a user is logged in
-            user ? fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
-                headers: { 'ngrok-skip-browser-warning': 'true' }
-            }) : Promise.resolve(null),
              fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/case/${id}/documents`, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
             })
-        ];
-
-        const [caseResponse, usersResponse, docsResponse] = await Promise.all(fetchPromises);
+        ]);
 
         if (caseResponse.status === 404) {
              notFound();
@@ -112,31 +108,17 @@ export default function CaseDetailPage() {
         }
         if (!caseResponse.ok) throw new Error(`Failed to fetch case details. Status: ${caseResponse.status}`);
         
-        let users: User[] = [];
-        if (usersResponse) { // Check if the fetch was actually made
-            if (!usersResponse.ok) {
-                console.error('Failed to fetch users');
-                // Decide if this is a hard error or if you can continue without user data
-            } else {
-                const usersJson = await usersResponse.json();
-                users = usersJson.users || [];
-            }
-        }
-        
         if (!docsResponse.ok) console.error('Failed to fetch documents');
 
         const caseJson = await caseResponse.json();
         const docsJson = await docsResponse.json();
         
-        const lawyer = users.find((u: User) => u.id === caseJson.lawyer_id);
-
         const transformedCase: Case = {
             ...caseJson,
             case_id: caseJson.id.toString(),
             title: caseJson.case_title,
             filing_date: new Date(caseJson.created_at),
             next_hearing: caseJson.next_hearing ? new Date(caseJson.next_hearing) : undefined,
-            lawyer: lawyer
         };
         setCaseData(transformedCase);
 
@@ -157,9 +139,40 @@ export default function CaseDetailPage() {
   
   useEffect(() => {
     if (!id) return;
-    // We can run the fetch regardless, the function itself is now smarter
-    fetchCaseDetails();
-  }, [id, user]); // Add user as a dependency to refetch when login state changes
+    fetchCaseAndDocuments();
+  }, [id]);
+
+  useEffect(() => {
+    // Fetch all users only when the user is confirmed to be logged in.
+    const fetchUsers = async () => {
+        if (user) {
+            try {
+                const usersResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                if (usersResponse.ok) {
+                    const usersJson = await usersResponse.json();
+                    setAllUsers(usersJson.users || []);
+                } else {
+                    console.error('Failed to fetch users');
+                }
+            } catch (e) {
+                console.error('Error fetching users:', e);
+            }
+        }
+    };
+    fetchUsers();
+  }, [user]); // This effect runs when the user object changes.
+
+  useEffect(() => {
+    // Once allUsers are fetched and caseData exists, link the lawyer.
+    if (caseData && allUsers.length > 0) {
+        const lawyer = allUsers.find((u: User) => u.id === caseData.lawyer_id);
+        setCaseData(currentCaseData => 
+            currentCaseData ? { ...currentCaseData, lawyer } : null
+        );
+    }
+  }, [caseData?.id, allUsers]); // Reruns if caseData changes or users are loaded.
 
 
   const handleHearingScheduled = (newHearing: Hearing) => {
@@ -167,8 +180,8 @@ export default function CaseDetailPage() {
   }
 
   const handleDocumentUploaded = (newDocument: Document) => {
-    // Instead of adding locally, re-fetch to get the latest list from the server
-    fetchCaseDetails();
+    // Re-fetch to get the latest list from the server
+    fetchCaseAndDocuments();
   };
   
   const handleTaskAdded = (newTask: Task) => {
@@ -484,6 +497,9 @@ export default function CaseDetailPage() {
           <Card>
               <CardHeader className="flex flex-row justify-between items-center">
                 <CardTitle className="font-headline">Associated Tasks</CardTitle>
+                <AddTaskDialog cases={[caseData]} defaultCaseId={caseData.case_id} onTaskAdded={handleTaskAdded}>
+                    <Button size="sm"><FilePlus2 className="mr-2 h-4 w-4"/> Add Task</Button>
+                </AddTaskDialog>
               </CardHeader>
               <CardContent>
                  <Table>
@@ -497,7 +513,7 @@ export default function CaseDetailPage() {
                   </TableHeader>
                   <TableBody>
                     {caseTasks.map(task => {
-                      const assignee = mockUsers.find(u => u.uid === task.assigned_to);
+                      const assignee = allUsers.find(u => u.uid === task.assigned_to);
                       return (
                        <TableRow key={task.task_id}>
                         <TableCell>{task.title}</TableCell>
@@ -524,5 +540,7 @@ export default function CaseDetailPage() {
     </div>
   );
 }
+
+    
 
     
