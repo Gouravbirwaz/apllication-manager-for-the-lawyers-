@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockHearings, mockTasks } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FilePlus2, Upload, CalendarPlus, Wand2, Video, FileText } from "lucide-react";
+import { FilePlus2, Upload, CalendarPlus, Wand2, Video, FileText, Trash2 } from "lucide-react";
 import { DocumentAnalysis } from "@/components/document-analysis";
 import { useState, useEffect } from "react";
 import { ScheduleHearing } from "@/components/hearings/schedule-hearing";
@@ -32,11 +32,21 @@ import type { Hearing, Document, Task, Case, User, CaseStatus } from "@/lib/type
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { analyzeLegalDocumentAction, updateCaseStatusAction, uploadDocumentsAction } from "@/app/actions";
+import { analyzeLegalDocumentAction, updateCaseStatusAction, deleteDocumentAction } from "@/app/actions";
 import type { LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
 import { AddTaskDialog } from "@/components/tasks/add-task-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser } from "@/contexts/UserContext";
@@ -81,6 +91,7 @@ export default function CaseDetailPage() {
 
   const [caseDocs, setCaseDocs] = useState<Document[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [docToDelete, setDocToDelete] = useState<Document | null>(null);
   
   const [caseHearings, setCaseHearings] = useState<Hearing[]>([]);
   const [caseTasks, setCaseTasks] = useState<Task[]>([]);
@@ -180,7 +191,7 @@ export default function CaseDetailPage() {
     setCaseHearings(prev => [...prev, newHearing].sort((a,b) => b.date.getTime() - a.date.getTime()));
   }
 
-  const handleDocumentUploaded = (newDocument: Document) => {
+  const handleDocumentUploaded = () => {
     // Re-fetch to get the latest list from the server
     fetchCaseAndDocuments();
   };
@@ -273,6 +284,30 @@ export default function CaseDetailPage() {
     }
   }
 
+  const handleDeleteDocument = async () => {
+    if (!docToDelete) return;
+
+    const result = await deleteDocumentAction(docToDelete.id);
+
+    if (result.error) {
+      toast({
+        title: "Error Deleting Document",
+        description: result.error,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Document Deleted",
+        description: `"${docToDelete.filename}" has been successfully deleted.`,
+      });
+      setCaseDocs(prev => prev.filter(d => d.id !== docToDelete.id));
+      if (selectedDocId === String(docToDelete.id)) {
+        setSelectedDocId(null);
+      }
+    }
+    setDocToDelete(null); // Close the dialog
+  };
+
 
   if (isLoading) {
     return <CaseDetailSkeleton />;
@@ -294,6 +329,22 @@ export default function CaseDetailPage() {
 
   return (
     <div className="space-y-6">
+      <AlertDialog open={!!docToDelete} onOpenChange={(open) => !open && setDocToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the document{' '}
+              <strong>&quot;{docToDelete?.filename}&quot;</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDocToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteDocument}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div>
         <h1 className="text-3xl font-headline">{caseData.title}</h1>
         <p className="text-muted-foreground">Case ID: {caseData.case_id}</p>
@@ -395,12 +446,16 @@ export default function CaseDetailPage() {
                           <TableCell className="uppercase text-muted-foreground">
                             <Badge variant="outline">{fileType}</Badge>
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right space-x-2">
                              <Button variant="ghost" size="sm" asChild>
                                <Link href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/document/${doc.id}`}>
                                   Download
                                </Link>
                              </Button>
+                              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDocToDelete(doc)}>
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Delete</span>
+                              </Button>
                           </TableCell>
                         </TableRow>
                       )})}

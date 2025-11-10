@@ -220,3 +220,23 @@ export async function uploadDocumentsAction(caseId: string, formData: FormData):
     return { error: e.message || 'Could not upload files.' };
   }
 }
+
+export async function deleteDocumentAction(docId: number): Promise<{ success: boolean } | { error: string }> {
+    try {
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/${docId}`;
+        const response = await fetch(apiUrl, {
+            method: 'DELETE',
+            headers: {
+                'ngrok-skip-browser-warning': 'true',
+            },
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to delete document.');
+        }
+        return { success: true };
+    } catch (e: any) {
+        console.error(e);
+        return { error: e.message || 'Could not delete document.' };
+    }
+}
