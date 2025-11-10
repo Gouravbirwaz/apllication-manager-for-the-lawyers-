@@ -148,6 +148,7 @@ export default function CaseDetailPage() {
         if (user) {
             try {
                 const usersResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
+                    credentials: 'include', // Send cookies with the request
                     headers: { 'ngrok-skip-browser-warning': 'true' }
                 });
                 if (usersResponse.ok) {
@@ -540,7 +541,3 @@ export default function CaseDetailPage() {
     </div>
   );
 }
-
-    
-
-    
