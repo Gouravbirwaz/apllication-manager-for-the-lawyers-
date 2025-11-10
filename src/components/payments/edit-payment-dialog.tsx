@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -14,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import type { User, AdvocatePayment } from '@/lib/types';
+import type { User, AdvocatePayment, Case } from '@/lib/types';
 import { updatePaymentAction } from '@/app/actions';
 
 interface EditPaymentDialogProps {
@@ -22,12 +23,13 @@ interface EditPaymentDialogProps {
   onOpenChange: (open: boolean) => void;
   payment: AdvocatePayment;
   advocates: User[];
+  cases: Case[];
   onPaymentUpdated: () => void;
 }
 
-export function EditPaymentDialog({ isOpen, onOpenChange, payment, advocates, onPaymentUpdated }: EditPaymentDialogProps) {
+export function EditPaymentDialog({ isOpen, onOpenChange, payment, advocates, cases, onPaymentUpdated }: EditPaymentDialogProps) {
   const [advocateId, setAdvocateId] = useState(payment.advocate_id);
-  const [cases, setCases] = useState(String(payment.cases));
+  const [caseId, setCaseId] = useState(payment.case_id ? String(payment.case_id) : undefined);
   const [billableHours, setBillableHours] = useState(String(payment.billable_hours));
   const [amount, setAmount] = useState(String(payment.total));
   const [status, setStatus] = useState<'pending' | 'paid'>(payment.status);
@@ -37,7 +39,7 @@ export function EditPaymentDialog({ isOpen, onOpenChange, payment, advocates, on
   useEffect(() => {
     if (isOpen) {
       setAdvocateId(payment.advocate_id);
-      setCases(String(payment.cases));
+      setCaseId(payment.case_id ? String(payment.case_id) : undefined);
       setBillableHours(String(payment.billable_hours));
       setAmount(String(payment.total));
       setStatus(payment.status);
@@ -45,10 +47,10 @@ export function EditPaymentDialog({ isOpen, onOpenChange, payment, advocates, on
   }, [isOpen, payment]);
 
   const handleSave = async () => {
-    if (!advocateId || !amount) {
+    if (!advocateId || !amount || !caseId) {
       toast({
         title: 'Missing Information',
-        description: 'Advocate and Amount are required fields.',
+        description: 'Advocate, Case, and Amount are required fields.',
         variant: 'destructive',
       });
       return;
@@ -58,7 +60,7 @@ export function EditPaymentDialog({ isOpen, onOpenChange, payment, advocates, on
     const result = await updatePaymentAction(payment.id, {
       advocate_id: advocateId,
       status: status,
-      cases: Number(cases),
+      case_id: Number(caseId),
       billable_hours: parseFloat(billableHours),
       total: parseFloat(amount),
     });
@@ -102,12 +104,21 @@ export function EditPaymentDialog({ isOpen, onOpenChange, payment, advocates, on
             </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="amount" className="text-right">Amount (INR)</Label>
-            <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="col-span-3" placeholder="e.g., 50000" />
+            <Label htmlFor="case" className="text-right">Case</Label>
+            <Select onValueChange={setCaseId} value={caseId}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select a case" />
+              </SelectTrigger>
+              <SelectContent>
+                {cases.map((caseItem) => (
+                  <SelectItem key={caseItem.id} value={String(caseItem.id)}>{caseItem.case_title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="cases" className="text-right">Cases</Label>
-            <Input id="cases" type="number" value={cases} onChange={(e) => setCases(e.target.value)} className="col-span-3" placeholder="Number of cases" />
+            <Label htmlFor="amount" className="text-right">Amount (INR)</Label>
+            <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="col-span-3" placeholder="e.g., 50000" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="billable-hours" className="text-right">Billable Hours</Label>

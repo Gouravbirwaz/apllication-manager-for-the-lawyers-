@@ -14,6 +14,7 @@ import {
   Bot,
   Users,
   CreditCard,
+  FileText,
 } from 'lucide-react';
 import {
   Breadcrumb,
@@ -40,6 +41,7 @@ const breadcrumbLabels: Record<string, string> = {
   '/dashboard/ask-bot': 'Legal Bot',
   '/dashboard/payments': 'Payments',
   '/dashboard/payments/process': 'Process Payment',
+  '/dashboard/invoices': 'Invoices',
 };
 
 const navItems = [
@@ -50,6 +52,7 @@ const navItems = [
   { href: '/dashboard/hearings', icon: CalendarDays, label: 'Hearings', requiredRole: null },
   { href: '/dashboard/ask-bot', icon: Bot, label: 'Legal Bot', requiredRole: null },
   { href: '/dashboard/payments', icon: CreditCard, label: 'Payments', requiredRole: 'main' },
+  { href: '/dashboard/invoices', icon: FileText, label: 'Invoices', requiredRole: 'main' },
 ];
 
 export function AppHeader() {

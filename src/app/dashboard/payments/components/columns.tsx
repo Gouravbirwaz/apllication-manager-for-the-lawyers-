@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { AdvocatePayment, User } from "@/lib/types"
+import type { AdvocatePayment, User, Case } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { deletePaymentAction } from "@/app/actions"
 import { EditPaymentDialog } from "@/components/payments/edit-payment-dialog"
@@ -48,12 +48,14 @@ const PaymentActions = ({
     payment,
     onPaymentDeleted,
     onPaymentUpdated,
-    advocates
+    advocates,
+    cases,
 }: {
     payment: AdvocatePayment,
     onPaymentDeleted: () => void,
     onPaymentUpdated: () => void,
-    advocates: User[]
+    advocates: User[],
+    cases: Case[]
 }) => {
     const { toast } = useToast();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -99,6 +101,7 @@ const PaymentActions = ({
               onOpenChange={setIsEditDialogOpen}
               payment={payment}
               advocates={advocates}
+              cases={cases}
               onPaymentUpdated={() => {
                 onPaymentUpdated();
                 setIsEditDialogOpen(false);
@@ -135,7 +138,8 @@ const PaymentActions = ({
 export const getColumns = (
   onPaymentUpdated: () => void,
   onPaymentDeleted: () => void,
-  advocates: User[]
+  advocates: User[],
+  cases: Case[],
 ): ColumnDef<AdvocatePayment>[] => ([
   {
     id: "select",
@@ -154,6 +158,7 @@ export const getColumns = (
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
+        disabled={row.original.status === 'paid'}
       />
     ),
     enableSorting: false,
@@ -176,6 +181,15 @@ export const getColumns = (
       <div className="font-medium">{row.getValue("name")}</div>
     ),
   },
+    {
+    accessorKey: "case_id",
+    header: "Case",
+    cell: ({ row }) => {
+      const caseId = row.getValue("case_id") as number;
+      const caseItem = cases.find(c => c.id === caseId);
+      return <div>{caseItem?.case_title || 'N/A'}</div>;
+    },
+  },
   {
     accessorKey: "status",
     header: "Status",
@@ -183,14 +197,6 @@ export const getColumns = (
       const status = row.getValue("status") as string;
       const variant: "outline" | "default" = status === 'paid' ? 'outline' : 'default';
       return <Badge variant={variant} className="capitalize">{status}</Badge>
-    },
-  },
-  {
-    accessorKey: "cases",
-    header: () => <div className="text-right">Cases</div>,
-    cell: ({ row }) => {
-        const casesCount = row.getValue("cases") as number;
-        return <div className="text-right font-medium">{casesCount}</div>
     },
   },
    {
@@ -225,6 +231,7 @@ export const getColumns = (
           onPaymentDeleted={onPaymentDeleted}
           onPaymentUpdated={onPaymentUpdated}
           advocates={advocates}
+          cases={cases}
         />
       )
     },

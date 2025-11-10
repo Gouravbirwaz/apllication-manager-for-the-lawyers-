@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -15,40 +16,31 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import type { User, AdvocatePayment } from '@/lib/types';
+import type { User, AdvocatePayment, Case } from '@/lib/types';
 import { addPaymentAction } from '@/app/actions';
 
 interface AddPaymentDialogProps {
   children: React.ReactNode;
   advocates: User[];
+  cases: Case[];
   onPaymentAdded: () => void;
 }
 
-export function AddPaymentDialog({ children, advocates, onPaymentAdded }: AddPaymentDialogProps) {
+export function AddPaymentDialog({ children, advocates, cases, onPaymentAdded }: AddPaymentDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [advocateId, setAdvocateId] = useState<string | undefined>();
-  const [cases, setCases] = useState('');
+  const [caseId, setCaseId] = useState<string | undefined>();
   const [billableHours, setBillableHours] = useState('');
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<'pending' | 'paid'>('pending');
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  const handleAdvocateChange = (id: string) => {
-    setAdvocateId(id);
-    const selectedAdvocate = advocates.find(adv => String(adv.id) === id);
-    if (selectedAdvocate && selectedAdvocate.total_case_handled !== undefined) {
-      setCases(String(selectedAdvocate.total_case_handled));
-    } else {
-      setCases('');
-    }
-  };
-
   const handleSave = async () => {
-    if (!advocateId || !amount) {
+    if (!advocateId || !amount || !caseId) {
       toast({
         title: 'Missing Information',
-        description: 'Please select an advocate and enter an amount.',
+        description: 'Please select an advocate, a case, and enter an amount.',
         variant: 'destructive',
       });
       return;
@@ -58,9 +50,10 @@ export function AddPaymentDialog({ children, advocates, onPaymentAdded }: AddPay
     const result = await addPaymentAction({
       advocate_id: advocateId,
       status: status,
-      cases: Number(cases) || 0,
+      case_id: Number(caseId),
       billable_hours: parseFloat(billableHours) || 0,
       total: parseFloat(amount),
+      cases: 1, // This field seems redundant now, defaulting to 1
     });
 
     setIsSaving(false);
@@ -84,7 +77,7 @@ export function AddPaymentDialog({ children, advocates, onPaymentAdded }: AddPay
 
   const resetForm = () => {
     setAdvocateId(undefined);
-    setCases('');
+    setCaseId(undefined);
     setBillableHours('');
     setAmount('');
     setStatus('pending');
@@ -104,7 +97,7 @@ export function AddPaymentDialog({ children, advocates, onPaymentAdded }: AddPay
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="advocate" className="text-right">Advocate</Label>
-            <Select onValueChange={handleAdvocateChange} value={advocateId}>
+            <Select onValueChange={setAdvocateId} value={advocateId}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select an advocate" />
               </SelectTrigger>
@@ -115,13 +108,22 @@ export function AddPaymentDialog({ children, advocates, onPaymentAdded }: AddPay
               </SelectContent>
             </Select>
           </div>
+           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="case" className="text-right">Case</Label>
+            <Select onValueChange={setCaseId} value={caseId}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select a case" />
+              </SelectTrigger>
+              <SelectContent>
+                {cases.map((caseItem) => (
+                  <SelectItem key={caseItem.id} value={String(caseItem.id)}>{caseItem.case_title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="amount" className="text-right">Amount (INR)</Label>
             <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="col-span-3" placeholder="e.g., 50000" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="cases" className="text-right">Cases</Label>
-            <Input id="cases" type="number" value={cases} onChange={(e) => setCases(e.target.value)} className="col-span-3" placeholder="Number of cases" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="billable-hours" className="text-right">Billable Hours</Label>

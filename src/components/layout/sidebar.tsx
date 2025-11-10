@@ -12,6 +12,7 @@ import {
   Bot,
   Users,
   CreditCard,
+  FileText,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -31,6 +32,7 @@ const navItems = [
   { href: '/dashboard/hearings', icon: CalendarDays, label: 'Hearings', requiredRole: null },
   { href: '/dashboard/ask-bot', icon: Bot, label: 'Legal Bot', requiredRole: null },
   { href: '/dashboard/payments', icon: CreditCard, label: 'Payments', requiredRole: 'main' },
+  { href: '/dashboard/invoices', icon: FileText, label: 'Invoices', requiredRole: 'main' },
 ];
 
 export function AppSidebar() {

@@ -8,7 +8,7 @@ import { DataTable } from './components/data-table';
 import { getColumns } from './components/columns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import type { AdvocatePayment, User } from '@/lib/types';
+import type { AdvocatePayment, User, Case } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { AddPaymentDialog } from '@/components/payments/add-payment-dialog';
@@ -25,6 +25,7 @@ const TableCell = ({className, ...props}: React.HTMLAttributes<HTMLTableCellElem
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<AdvocatePayment[]>([]);
   const [advocates, setAdvocates] = useState<User[]>([]);
+  const [cases, setCases] = useState<Case[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -33,25 +34,28 @@ export default function PaymentsPage() {
   const fetchPayments = async () => {
       // Don't set loading to true here to avoid skeleton on re-fetch
       try {
-        const [paymentsResponse, usersResponse] = await Promise.all([
+        const [paymentsResponse, usersResponse, casesResponse] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`, {
             headers: { 'ngrok-skip-browser-warning': 'true' }
           }),
           fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
             headers: { 'ngrok-skip-browser-warning': 'true' }
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases`, {
+            headers: { 'ngrok-skip-browser-warning': 'true' }
           })
         ]);
 
-        if (!paymentsResponse.ok) {
-          throw new Error(`Failed to fetch payments. Status: ${paymentsResponse.status}`);
-        }
-        if (!usersResponse.ok) {
-          throw new Error(`Failed to fetch users. Status: ${usersResponse.status}`);
-        }
+        if (!paymentsResponse.ok) throw new Error(`Failed to fetch payments. Status: ${paymentsResponse.status}`);
+        if (!usersResponse.ok) throw new Error(`Failed to fetch users. Status: ${usersResponse.status}`);
+        if (!casesResponse.ok) throw new Error(`Failed to fetch cases. Status: ${casesResponse.status}`);
+
 
         const paymentsData: any[] = await paymentsResponse.json();
         const usersData: User[] = await usersResponse.json();
+        const casesData: Case[] = await casesResponse.json();
         
+        setCases(casesData);
         setAdvocates(usersData);
         const usersMap = new Map(usersData.map(user => [user.id, user]));
 
@@ -62,10 +66,11 @@ export default function PaymentsPage() {
             advocate_id: String(p.advocate_id),
             name: advocate?.name || 'Unknown Advocate',
             email: advocate?.email || 'N/A',
-            cases: advocate?.total_case_handled || 0,
+            cases: p.cases || advocate?.total_case_handled || 0,
             billable_hours: p.billable_hours || 0,
             status: p.transaction_status ? 'paid' : 'pending',
             total: p.amount || 0,
+            case_id: p.case_id
           };
         });
 
@@ -94,7 +99,7 @@ export default function PaymentsPage() {
     .filter(p => p.status === 'pending')
     .reduce((sum, p) => sum + p.total, 0);
 
-  const columns = useMemo(() => getColumns(handlePaymentAction, handlePaymentAction, advocates), [advocates]);
+  const columns = useMemo(() => getColumns(handlePaymentAction, handlePaymentAction, advocates, cases), [advocates, cases]);
 
   if (isLoading || isUserLoading) {
     return (
@@ -166,7 +171,7 @@ export default function PaymentsPage() {
           </div>
           <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
              <div className="flex gap-2">
-                <AddPaymentDialog advocates={advocates} onPaymentAdded={handlePaymentAction}>
+                <AddPaymentDialog advocates={advocates} onPaymentAdded={handlePaymentAction} cases={cases}>
                   <Button size="sm" className="gap-1">
                       <PlusCircle className="h-3.5 w-3.5" />
                       New Payment

@@ -6,13 +6,14 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, CreditCard, Loader2, User, Users, Lock } from 'lucide-react';
-import type { AdvocatePayment, User as Advocate } from '@/lib/types';
+import { CheckCircle, CreditCard, Loader2, User, Users, Lock, Send } from 'lucide-react';
+import type { AdvocatePayment, User as Advocate, Invoice } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import { updatePaymentStatusAction } from '@/app/actions';
+import { updatePaymentStatusAction, createInvoiceAction, sendInvoiceAction } from '@/app/actions';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { format } from 'date-fns';
 
 function PaymentProcessing() {
     const searchParams = useSearchParams();
@@ -39,26 +40,33 @@ function PaymentProcessing() {
             }
             setIsLoading(true);
             try {
-                 const [paymentsResponse, usersResponse] = await Promise.all([
+                 const [paymentsResponse, usersResponse, casesResponse] = await Promise.all([
                     fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`, {
                         headers: { 'ngrok-skip-browser-warning': 'true' }
                     }),
                     fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
+                        headers: { 'ngrok-skip-browser-warning': 'true' }
+                    }),
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases`, {
                         headers: { 'ngrok-skip-browser-warning': 'true' }
                     })
                 ]);
 
                 if (!paymentsResponse.ok) throw new Error("Failed to fetch payments");
                 if (!usersResponse.ok) throw new Error("Failed to fetch users");
+                if (!casesResponse.ok) throw new Error("Failed to fetch cases");
 
                 const allPayments: any[] = await paymentsResponse.json();
                 const allUsers: Advocate[] = await usersResponse.json();
+                const allCases: any[] = await casesResponse.json();
                 const usersMap = new Map(allUsers.map(u => [u.id, u]));
+                const casesMap = new Map(allCases.map(c => [c.id, c]));
 
                 const filteredPayments = allPayments
                     .filter(p => paymentIds.includes(String(p.id)))
                     .map(p => {
                         const advocate = usersMap.get(p.advocate_id);
+                        const caseForPayment = p.case_id ? casesMap.get(p.case_id) : undefined;
                         return {
                             id: String(p.id),
                             advocate_id: String(p.advocate_id),
@@ -68,6 +76,8 @@ function PaymentProcessing() {
                             billable_hours: p.billable_hours || 0,
                             status: p.transaction_status ? 'paid' : 'pending',
                             total: p.amount || 0,
+                            case_id: p.case_id,
+                            client_id: caseForPayment?.client.id,
                         }
                     });
                 
@@ -83,7 +93,6 @@ function PaymentProcessing() {
 
 
     const handleConfirmPayment = async () => {
-        // --- Password Check ---
         if (password !== 'Gourav@123') {
             toast({
                 title: "Incorrect Password",
@@ -95,32 +104,68 @@ function PaymentProcessing() {
 
         setIsProcessing(true);
 
-        // 1. Simulate API call to a payment gateway like Stripe
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // 1. Simulate API call to a payment gateway
+        await new Promise(resolve => setTimeout(resolve, 1500));
         
         // 2. Update payment status on our backend
-        const result = await updatePaymentStatusAction(paymentIds);
+        const updateResult = await updatePaymentStatusAction(paymentIds);
 
-        setIsProcessing(false);
-
-        if (result.error) {
+        if (updateResult.error) {
              toast({
                 title: "Payment Update Failed",
-                description: result.error,
+                description: updateResult.error,
                 variant: 'destructive'
             });
-            // Keep the user on the page to allow them to retry if needed.
+            setIsProcessing(false);
             return;
         }
-
-        // 3. Show success and redirect
-        setIsComplete(true);
+        
         toast({
-            title: "Payment Successful",
-            description: `Successfully paid ${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalAmount)}.`,
+            title: "Payment Confirmed",
+            description: "Payment status updated. Now generating and sending invoices...",
         });
 
-        setTimeout(() => router.push('/dashboard/payments'), 2000);
+        // 3. Create and send invoices for each payment
+        for (const payment of paymentsToProcess) {
+            if (!payment.client_id || !payment.case_id) {
+                toast({ title: "Invoice Skipped", description: `Could not create invoice for ${payment.name} due to missing client/case ID.`, variant: 'destructive'});
+                continue;
+            }
+
+            const today = new Date();
+            const dueDate = new Date(today);
+            dueDate.setDate(dueDate.getDate() + 30);
+
+            const invoiceData: Partial<Invoice> = {
+                client_id: payment.client_id,
+                case_id: payment.case_id,
+                invoice_number: `INV-${Date.now()}-${payment.case_id}`,
+                issue_date: format(today, 'yyyy-MM-dd'),
+                due_date: format(dueDate, 'yyyy-MM-dd'),
+                total_amount: payment.total,
+                status: "Paid",
+                description: `Professional fees for services rendered by Advocate ${payment.name}. Payment ID: ${payment.id}.`
+            };
+
+            const invoiceResult = await createInvoiceAction(invoiceData);
+            if (invoiceResult.error || !invoiceResult.invoice) {
+                toast({ title: 'Invoice Creation Failed', description: invoiceResult.error, variant: 'destructive' });
+            } else {
+                toast({ title: 'Invoice Created', description: `Invoice ${invoiceResult.invoice.invoice_number} created.`});
+                // Send email
+                const sendResult = await sendInvoiceAction(invoiceResult.invoice.id);
+                if (sendResult.error) {
+                    toast({ title: 'Email Failed', description: `Could not email invoice ${invoiceResult.invoice.invoice_number}.`, variant: 'destructive'});
+                } else {
+                     toast({ title: 'Invoice Sent', description: <div className='flex items-center gap-2'><Send/> Invoice sent to client.</div>});
+                }
+            }
+        }
+
+
+        setIsProcessing(false);
+        setIsComplete(true);
+        setTimeout(() => router.push('/dashboard/payments'), 3000);
     };
     
     if (isLoading) {
@@ -147,7 +192,7 @@ function PaymentProcessing() {
         return (
              <div className="text-center space-y-4 p-6">
                 <CheckCircle className="h-16 w-16 text-green-500 mx-auto animate-pulse" />
-                <h2 className="text-2xl font-bold">Payment Complete!</h2>
+                <h2 className="text-2xl font-bold">Process Complete!</h2>
                 <p className="text-muted-foreground">Redirecting you back to the payments dashboard...</p>
             </div>
         )
@@ -172,7 +217,7 @@ function PaymentProcessing() {
                     </h3>
                     <p>
                         You are about to process a payment for{' '}
-                        <span className="font-bold">{paymentsToProcess.length}</span> advocate(s).
+                        <span className="font-bold">{paymentsToProcess.length}</span> advocate(s). An invoice will be generated and emailed to the respective client for each payment.
                     </p>
                     {paymentsToProcess.length > 0 && paymentsToProcess.length < 5 && (
                          <div className="text-xs text-muted-foreground mt-2">

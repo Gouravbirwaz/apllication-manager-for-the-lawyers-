@@ -3,7 +3,7 @@
 
 import { analyzeLegalDocument as analyzeLegalDocumentFlow, LegalDocumentAnalysisInput, LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
 import { askLegalAssistant as askLegalAssistantFlow, LegalAssistantInput } from "@/ai/flows/legal-assistant-flow";
-import type { Case, AdvocatePayment } from "@/lib/types";
+import type { Case, AdvocatePayment, Invoice } from "@/lib/types";
 
 export async function analyzeLegalDocumentAction(input: LegalDocumentAnalysisInput): Promise<{ analysis: LegalDocumentAnalysisOutput } | { error: string }> {
   try {
@@ -238,5 +238,45 @@ export async function deleteDocumentAction(docId: number): Promise<{ success: bo
     } catch (e: any) {
         console.error(e);
         return { error: e.message || 'Could not delete document.' };
+    }
+}
+
+export async function createInvoiceAction(invoiceData: Partial<Invoice>): Promise<{ invoice: Invoice } | { error: string }> {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true',
+            },
+            body: JSON.stringify(invoiceData),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to create invoice.');
+        }
+        return { invoice: result.invoice };
+    } catch (e: any) {
+        console.error(e);
+        return { error: e.message || 'Could not create invoice.' };
+    }
+}
+
+export async function sendInvoiceAction(invoiceId: number): Promise<{ success: boolean } | { error: string }> {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/send_invoice/${invoiceId}`, {
+            method: 'POST',
+            headers: {
+                'ngrok-skip-browser-warning': 'true',
+            },
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to send invoice.');
+        }
+        return { success: true };
+    } catch (e: any) {
+        console.error(e);
+        return { error: e.message || 'Could not send invoice.' };
     }
 }

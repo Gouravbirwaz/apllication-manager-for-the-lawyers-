@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from "firebase/firestore";
 
 export type UserRole = "lawyer" | "client" | "assistant" | "admin" | "main";
@@ -96,4 +97,19 @@ export interface AdvocatePayment {
   billable_hours: number;
   total: number; // Corresponds to `amount` from backend
   status: 'pending' | 'paid';
+  case_id?: number; // Added to link payment to a specific case/client
+  client_id?: number;
+}
+
+export interface Invoice {
+  id: number;
+  client_id: number;
+  case_id: number;
+  invoice_number: string;
+  issue_date: string;
+  due_date: string;
+  total_amount: number;
+  status: "Pending" | "Paid" | "Overdue";
+  description?: string;
+  client?: User; // Optional, to be populated on the frontend
 }
