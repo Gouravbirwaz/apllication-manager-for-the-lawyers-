@@ -38,6 +38,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useUser } from "@/contexts/UserContext";
 
 
 function CaseDetailSkeleton() {
@@ -71,6 +72,7 @@ export default function CaseDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const { toast } = useToast();
+  const { user } = useUser();
 
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,31 +91,43 @@ export default function CaseDetailPage() {
     setIsLoading(true);
     setError(null);
     try {
-        const [caseResponse, usersResponse, docsResponse] = await Promise.all([
+        const fetchPromises = [
             fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${id}`, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
             }),
-            fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
+            // Conditionally fetch users only if a user is logged in
+            user ? fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
-            }),
+            }) : Promise.resolve(null),
              fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/case/${id}/documents`, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
             })
-        ]);
+        ];
+
+        const [caseResponse, usersResponse, docsResponse] = await Promise.all(fetchPromises);
 
         if (caseResponse.status === 404) {
              notFound();
              return;
         }
         if (!caseResponse.ok) throw new Error(`Failed to fetch case details. Status: ${caseResponse.status}`);
-        if (!usersResponse.ok) console.error('Failed to fetch users');
+        
+        let users: User[] = [];
+        if (usersResponse) { // Check if the fetch was actually made
+            if (!usersResponse.ok) {
+                console.error('Failed to fetch users');
+                // Decide if this is a hard error or if you can continue without user data
+            } else {
+                const usersJson = await usersResponse.json();
+                users = usersJson.users || [];
+            }
+        }
+        
         if (!docsResponse.ok) console.error('Failed to fetch documents');
 
         const caseJson = await caseResponse.json();
-        const usersJson = await usersResponse.json();
         const docsJson = await docsResponse.json();
         
-        const users = usersJson.users || [];
         const lawyer = users.find((u: User) => u.id === caseJson.lawyer_id);
 
         const transformedCase: Case = {
@@ -143,8 +157,9 @@ export default function CaseDetailPage() {
   
   useEffect(() => {
     if (!id) return;
+    // We can run the fetch regardless, the function itself is now smarter
     fetchCaseDetails();
-  }, [id]);
+  }, [id, user]); // Add user as a dependency to refetch when login state changes
 
 
   const handleHearingScheduled = (newHearing: Hearing) => {
@@ -509,3 +524,5 @@ export default function CaseDetailPage() {
     </div>
   );
 }
+
+    
