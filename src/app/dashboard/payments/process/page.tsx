@@ -68,7 +68,7 @@ function PaymentProcessing() {
                             billable_hours: p.billable_hours || 0,
                             status: p.transaction_status ? 'paid' : 'pending',
                             total: p.amount || 0,
-                            case_id: caseForPayment?.id,
+                            case_id: p.case,
                             client_id: caseForPayment?.client_id,
                             advocate: advocate,
                         } as AdvocatePayment
