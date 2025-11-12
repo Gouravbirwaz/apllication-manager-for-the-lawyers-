@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { CreditCard, CalendarClock, PlusCircle, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,8 +31,9 @@ export default function PaymentsPage() {
   const { toast } = useToast();
   const { user, isLoading: isUserLoading } = useUser();
 
-  const fetchPayments = async () => {
-      // Don't set loading to true here to avoid skeleton on re-fetch
+  const fetchPayments = useCallback(async () => {
+      setError(null);
+      // Don't set loading to true here to avoid skeleton on re-fetch for updates
       try {
         const [paymentsResponse, usersResponse, casesResponse] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`),
@@ -82,15 +83,19 @@ export default function PaymentsPage() {
       } finally {
         setIsLoading(false);
       }
-    };
+    }, []);
     
   useEffect(() => {
+    if (isUserLoading) {
+        return; // Wait until user data is loaded
+    }
     if (user?.role === 'main') {
       fetchPayments();
     } else {
+        // If user is not main, we are not loading anything.
         setIsLoading(false);
     }
-  }, [user]);
+  }, [user, isUserLoading, fetchPayments]);
 
   const handlePaymentAction = () => {
     // Re-fetch all data to ensure the table is up-to-date
@@ -101,7 +106,7 @@ export default function PaymentsPage() {
     .filter(p => p.status === 'pending')
     .reduce((sum, p) => sum + p.total, 0);
 
-  const columns = useMemo(() => getColumns(handlePaymentAction, handlePaymentAction, advocates, cases), [advocates, cases]);
+  const columns = useMemo(() => getColumns(handlePaymentAction, handlePaymentAction, advocates, cases), [advocates, cases, fetchPayments]);
 
   if (isLoading || isUserLoading) {
     return (
