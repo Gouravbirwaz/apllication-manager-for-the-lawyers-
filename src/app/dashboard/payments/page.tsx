@@ -69,11 +69,11 @@ export default function PaymentsPage() {
             advocate_id: String(p.advocate_id),
             name: advocate?.name || 'Unknown Advocate',
             email: advocate?.email || 'N/A',
-            cases: p.cases || 0,
+            cases: p.cases || 0, // This is a count, not needed for display logic
             billable_hours: p.billable_hours || 0,
             status: p.transaction_status ? 'paid' : 'pending',
             total: p.amount || 0,
-            case_id: p.cases,
+            case_id: p.cases, // The backend sends 'cases' as the case_id
           };
         });
 
