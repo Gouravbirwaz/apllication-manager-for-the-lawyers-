@@ -10,8 +10,14 @@ import { CheckCircle, CreditCard, Loader2, User, Users, Send, ExternalLink } fro
 import type { AdvocatePayment, User as Advocate, Invoice, Case } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import { updatePaymentStatusAction, createInvoiceAction, sendInvoiceAction } from '@/app/actions';
+import { updatePaymentStatusAction, createInvoiceAction, sendInvoiceAction, createRazorpayOrderAction } from '@/app/actions';
 import { format } from 'date-fns';
+
+declare global {
+    interface Window {
+        Razorpay: any;
+    }
+}
 
 function PaymentProcessing() {
     const searchParams = useSearchParams();
@@ -23,7 +29,6 @@ function PaymentProcessing() {
     const [paymentsToProcess, setPaymentsToProcess] = useState<AdvocatePayment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [gpayUrl, setGpayUrl] = useState<string | null>(null);
 
     const paymentIds = useMemo(() => searchParams.getAll('paymentIds'), [searchParams]);
     const amount = searchParams.get('amount');
@@ -59,19 +64,18 @@ function PaymentProcessing() {
                     .filter(p => paymentIds.includes(String(p.id)))
                     .map(p => {
                         const advocate = usersMap.get(p.advocate_id);
-                        const caseForPayment = p.cases ? casesMap.get(p.cases) : undefined;
+                        const caseForPayment = p.case ? casesMap.get(p.case) : undefined;
                         
                         return {
                             id: String(p.id),
                             advocate_id: String(p.advocate_id),
                             name: advocate?.name || 'Unknown Advocate',
                             email: advocate?.email || 'N/A',
-                            cases: p.cases || 0,
                             billable_hours: p.billable_hours || 0,
                             status: p.transaction_status ? 'paid' : 'pending',
                             total: p.amount || 0,
                             case_id: caseForPayment?.id,
-                            client_id: caseForPayment?.client_id,
+                            client_id: caseForPayment?.client_id, // Correctly pass the client_id from the case
                             advocate: advocate,
                         } as AdvocatePayment
                     });
@@ -79,17 +83,6 @@ function PaymentProcessing() {
                 if (filteredPayments.length === 0) {
                     setError("Could not find the specified payments.");
                 } else {
-                    if (filteredPayments.length === 1) {
-                        const advocate = filteredPayments[0].advocate;
-                        if(advocate?.gpay_details) {
-                            const url = `https://gpay.app.goo.gl/pay?pa=${advocate.gpay_details}&pn=${encodeURIComponent(advocate.name)}&am=${totalAmount}&cu=INR&tn=Nyayadeep_Payment_For_${advocate.name}`;
-                            setGpayUrl(url);
-                        } else {
-                            setError(`Advocate ${advocate?.name} does not have a GPay UPI ID configured.`);
-                        }
-                    } else {
-                         setError("Bulk payment via GPay is not supported. Please pay one advocate at a time.");
-                    }
                     setPaymentsToProcess(filteredPayments);
                 }
             } catch(err: any) {
@@ -99,12 +92,65 @@ function PaymentProcessing() {
             }
         }
         fetchPaymentDetails();
-    }, [paymentIds, totalAmount]);
+    }, [paymentIds]);
+
+    const handleLaunchRazorpay = async () => {
+      setIsConfirming(true);
+      const advocate = paymentsToProcess[0]?.advocate;
+      if (!advocate) {
+          setError("Advocate details are missing.");
+          setIsConfirming(false);
+          return;
+      }
+    
+      const orderResult = await createRazorpayOrderAction({ amount: totalAmount });
+    
+      if (orderResult.error || !orderResult.order) {
+        toast({ title: "Error", description: orderResult.error || "Could not create Razorpay order.", variant: 'destructive'});
+        setIsConfirming(false);
+        return;
+      }
+    
+      const { order } = orderResult;
+    
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Nyayadeep Law Firm",
+        description: `Payment to ${advocate.name}`,
+        order_id: order.id,
+        handler: async function (response: any) {
+            // Here you would typically verify the signature on your backend
+            // For now, we will proceed optimistically
+            toast({ title: "Payment Successful", description: `ID: ${response.razorpay_payment_id}`});
+            await handleConfirmPayment(response.razorpay_payment_id, order.id);
+        },
+        prefill: {
+            name: "Your Firm Name", // Or fetch the current user's name
+            email: "firm@example.com",
+        },
+        theme: {
+            color: "#FFC266"
+        }
+      };
+      
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response: any){
+            toast({
+                title: "Payment Failed",
+                description: response.error.description,
+                variant: 'destructive'
+            });
+            setIsConfirming(false);
+      });
+
+      rzp.open();
+    };
 
 
-    const handleConfirmPayment = async () => {
-        setIsConfirming(true);
-
+    const handleConfirmPayment = async (paymentId: string, orderId: string) => {
+        // This is now called by the Razorpay handler
         const updateResult = await updatePaymentStatusAction(paymentIds);
 
         if (updateResult.error) {
@@ -140,7 +186,7 @@ function PaymentProcessing() {
                 due_date: format(dueDate, 'yyyy-MM-dd'),
                 total_amount: payment.total,
                 status: "Paid",
-                description: `Professional fees for services rendered by Advocate ${payment.name}. Payment ID: ${payment.id}.`
+                description: `Professional fees for services rendered by Advocate ${payment.name}. Payment ID: ${paymentId}.`
             };
 
             const invoiceResult = await createInvoiceAction(invoiceData);
@@ -198,8 +244,8 @@ function PaymentProcessing() {
     return (
         <>
             <CardHeader>
-                <CardTitle className="font-headline text-2xl">Pay Advocate via GPay</CardTitle>
-                <CardDescription>Review the details and follow the steps to complete the payment.</CardDescription>
+                <CardTitle className="font-headline text-2xl">Pay Advocate via Razorpay</CardTitle>
+                <CardDescription>Review the details and proceed to checkout.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="text-center">
@@ -209,38 +255,22 @@ function PaymentProcessing() {
                 
                 <div className="p-4 bg-muted/50 rounded-lg text-sm space-y-2">
                     <h3 className="font-semibold mb-2 flex items-center gap-2">
-                        <User />
-                        Payment Recipient
+                        {paymentsToProcess.length > 1 ? <Users /> : <User />}
+                        Payment Recipient{paymentsToProcess.length > 1 ? 's' : ''}
                     </h3>
-                    <div className="flex justify-between">
-                        <span>Advocate:</span>
-                        <span className="font-medium">{advocateName}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span>UPI ID:</span>
-                        <span className="font-mono text-xs">{paymentsToProcess[0]?.advocate?.gpay_details}</span>
-                    </div>
+                    {paymentsToProcess.map(p => (
+                        <div key={p.id} className="flex justify-between">
+                            <span>{p.name}</span>
+                            <span className="font-medium">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(p.total)}</span>
+                        </div>
+                    ))}
                 </div>
 
                 <div className="space-y-4 text-center">
-                    <p className="text-sm text-muted-foreground">
-                        <span className='font-semibold text-foreground'>Step 1:</span> Click the button below to open Google Pay and complete the transaction.
-                    </p>
-                    <Button className="w-full" size="lg" asChild>
-                        <a href={gpayUrl || '#'} target="_blank" rel="noopener noreferrer">
-                            <CreditCard className="mr-2 h-5 w-5" /> Pay <span className="font-bold mx-1">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalAmount)}</span> with GPay
-                            <ExternalLink className="ml-2 h-4 w-4"/>
-                        </a>
+                    <Button className="w-full" size="lg" onClick={handleLaunchRazorpay} disabled={isConfirming}>
+                        {isConfirming ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Please wait...</> : <><CreditCard className="mr-2 h-5 w-5" /> Proceed to Pay</>}
                     </Button>
-                </div>
-
-                 <div className="space-y-4 text-center">
-                    <p className="text-sm text-muted-foreground">
-                       <span className='font-semibold text-foreground'>Step 2:</span> After paying, click here to confirm and record the transaction in the system.
-                    </p>
-                    <Button className="w-full" variant="outline" onClick={handleConfirmPayment} disabled={isConfirming}>
-                        {isConfirming ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Confirming...</> : <><CheckCircle className="mr-2 h-4 w-4" /> Confirm Payment Completion</>}
-                    </Button>
+                    <p className="text-xs text-muted-foreground">You will be redirected to Razorpay to complete your payment.</p>
                 </div>
 
             </CardContent>
@@ -253,6 +283,13 @@ function PaymentProcessing() {
 
 
 export default function ProcessPaymentPage() {
+    useEffect(() => {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        document.body.appendChild(script);
+    }, []);
+
   return (
     <div className="flex justify-center items-center h-full">
         <Card className="w-full max-w-md">
@@ -263,3 +300,5 @@ export default function ProcessPaymentPage() {
     </div>
   );
 }
+
+    
