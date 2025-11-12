@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice {{ invoice.invoice_number }}</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background-color: #121212;
+            color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            background-color: #1e1e1e;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #2e2e2e;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .header img {
+            height: 60px;
+            margin-bottom: 10px;
+        }
+        .header h1 {
+            color: #f7931e;
+            font-weight: 600;
+            font-size: 22px;
+        }
+        .details {
+            background-color: #181818;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .details p {
+            margin: 6px 0;
+        }
+        .amount {
+            color: #f7931e;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            color: #aaa;
+            font-size: 13px;
+            margin-top: 30px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 20px;
+            margin-top: 20px;
+            background-color: #f7931e;
+            color: #121212;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .btn:hover {
+            background-color: #ffa733;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ url_for('static', filename='nyayadeep_logo.png') }}" alt="Nyayadeep Logo">
+            <h1>Invoice from Nyayadeep</h1>
+        </div>
+
+        <p>Dear {{ client.name }},</p>
+        <p>We hope this message finds you well. Please find below your invoice details:</p>
+
+        <div class="details">
+            <p><strong>Invoice Number:</strong> {{ invoice.invoice_number }}</p>
+            <p><strong>Issue Date:</strong> {{ invoice.issue_date.strftime('%Y-%m-%d') }}</p>
+            <p><strong>Due Date:</strong> {{ invoice.due_date.strftime('%Y-%m-%d') }}</p>
+            <p><strong>Status:</strong> {{ invoice.status }}</p>
+            <p><strong>Description:</strong> {{ invoice.description or '—' }}</p>
+            <p class="amount">Total Amount: ₹{{ "%.2f"|format(invoice.total_amount) }}</p>
+        </div>
+
+        <div style="text-align:center;">
+            <a href="#" class="btn">View Invoice Online</a>
+        </div>
+
+        <div class="footer">
+            <p>Thank you for choosing Nyayadeep Legal Services.</p>
+            <p>© {{ datetime.utcnow().year }} Nyayadeep. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

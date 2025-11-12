@@ -1,8 +1,10 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify,current_app,send_file, abort
 from extention import db
-from models import Client, Case,UserDeatails
+from models import Client, Case,UserDeatails,Document
 from datetime import datetime
-
+import os
+from werkzeug.utils import secure_filename
+from PyPDF2 import PdfReader
 
 
 case_bp=Blueprint("case_bp",__name__)
@@ -159,3 +161,175 @@ def assign_case():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Failed to assign case: {str(e)}'}), 500
+    
+
+
+
+
+
+
+
+
+    
+@case_bp.route('/upload/<int:case_id>', methods=['POST'])
+def upload_files(case_id):
+    case = Case.query.get(case_id)
+    if not case:
+        return jsonify({"error": "Case not found"}), 404
+
+    files = request.files.getlist('documents')
+    if not files:
+        return jsonify({"error": "No files provided"}), 400
+
+    uploaded_files = []
+
+    for file in files:
+        filename = secure_filename(file.filename)
+        case_folder = os.path.join(f'{current_app.config['UPLOAD_FOLDER']}/documents', f"case_{case_id}")
+        os.makedirs(case_folder, exist_ok=True)
+        file_path = os.path.join(case_folder, filename)
+        file.save(file_path)
+
+        doc = Document(filename=filename, path=file_path, case=case)
+        db.session.add(doc)
+        uploaded_files.append(filename)
+
+    db.session.commit()
+
+    return jsonify({
+        "message": f"{len(uploaded_files)} file(s) uploaded",
+        "files": uploaded_files
+    })
+
+
+@case_bp.route('/case/<int:case_id>/documents', methods=['GET'])
+def get_case_documents(case_id):
+    case = Case.query.get(case_id)
+    if not case:
+        return jsonify({"error": "Case not found"}), 404
+
+    documents = [
+        {
+            "id": doc.id,
+            "filename": doc.filename,
+            "url": f"/document/{doc.id}"  # a download URL
+        }
+        for doc in case.documents
+    ]
+
+    return jsonify({
+        "case_id": case.id,
+        "case_title": case.case_title,
+        "documents": documents
+    })
+
+
+@case_bp.route('/document/<int:doc_id>', methods=['GET'])
+def get_document(doc_id):
+    doc = Document.query.get(doc_id)
+    if not doc:
+        abort(404, description="Document not found")
+
+    if not os.path.exists(doc.path):
+        abort(404, description="File missing on server")
+
+    return send_file(doc.path, as_attachment=True)
+
+
+@case_bp.route('/document/<int:doc_id>/preview', methods=['GET'])
+def preview_document(doc_id):
+    doc = Document.query.get(doc_id)
+    if not doc:
+        abort(404, description="Document not found")
+
+    if not os.path.exists(doc.path):
+        abort(404, description="File missing on server")
+
+    # Inline preview (PDFs, images, text, etc.)
+    return send_file(doc.path, as_attachment=False)
+
+
+
+
+
+@case_bp.route("/documents/<int:doc_id>", methods=["DELETE"])
+def delete_document(doc_id):
+    """Delete a document by ID (both from DB and disk)."""
+    # Get the document from DB
+    doc = Document.query.get(doc_id)
+    if not doc:
+        return jsonify({"error": "Document not found"}), 404
+
+    # Compute the full path (handle safe deletion)
+    file_path = os.path.join(f'{current_app.config["UPLOAD_FOLDER"]}/documents', doc.filename)
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except Exception as e:
+        current_app.logger.warning(f"Failed to delete file: {e}")
+
+    # Delete from DB
+    db.session.delete(doc)
+    db.session.commit()
+
+    return jsonify({"message": "Document deleted successfully", "doc_id": doc_id}), 200
+
+
+
+
+
+
+
+
+
+
+
+
+def extract_text_from_file(file_path):
+    """
+    Extract text content depending on the file type.
+    Supports .pdf and .txt. Ignores other extensions.
+    """
+    text = ""
+    try:
+        ext = os.path.splitext(file_path)[1].lower()
+
+        if ext == ".pdf":
+            reader = PdfReader(file_path)
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+
+        elif ext == ".txt":
+            with open(file_path, "r", encoding="utf-8") as f:
+                text = f.read()
+
+        else:
+            text = "[Unsupported file type]"
+    except Exception as e:
+        text = f"[Error reading file: {str(e)}]"
+    return text
+
+
+
+@case_bp.route('/extract_text/<case_id>', methods=['GET'])
+def extract_text(case_id):
+    case_folder = os.path.join(f'{current_app.config["UPLOAD_FOLDER"]}/documents', case_id)
+
+    if not os.path.exists(case_folder):
+        return jsonify({"error": f"No folder found for case {case_id}"}), 404
+
+    documents_data = {}
+    for filename in os.listdir(case_folder):
+        file_path = os.path.join(case_folder, filename)
+        if os.path.isfile(file_path):
+            documents_data[filename] = extract_text_from_file(file_path)
+
+    if not documents_data:
+        return jsonify({"error": "No readable documents found"}), 404
+
+    return jsonify({
+        "case_id": case_id,
+        "documents": documents_data
+    })

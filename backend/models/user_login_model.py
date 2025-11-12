@@ -8,7 +8,7 @@ import os
 
 load_dotenv()
 
-class UserDeatails(db.Model):
+class UserDeatails(db.Model,UserMixin):
     __tablename__ = 'user_details'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80)) 
@@ -24,6 +24,7 @@ class UserDeatails(db.Model):
     total_case_handled=db.Column(db.Integer)
     role=db.Column(db.String(50))
     cases = db.relationship("Case", backref="advocate", lazy=True)
+    gpay_upi_id=db.Column(db.String(50))
     def get_photo_url(self):
         """Generate public URL for the user's photo"""
         base_url = os.getenv("BASE_URL", "http://127.0.0.1:8080")
@@ -39,6 +40,7 @@ class UserDeatails(db.Model):
             "phone_number": self.phone_number,
             "role":self.role,
             "current_state": self.current_state,
+            "gpay_details":self.gpay_upi_id,
             "photo_url": self.get_photo_url(),
             "total_case_handled":self.total_case_handled,
             "created_at": self.created_at.isoformat() if self.created_at else None,

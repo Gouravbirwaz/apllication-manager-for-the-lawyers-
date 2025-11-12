@@ -1,20 +1,24 @@
 import os
 from flask import Blueprint, request, jsonify, current_app, send_from_directory,send_file
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required,current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename, safe_join
-from extention import db,mail
+from extention import db,mail,login_manager
 from models.user_login_model import UserDeatails
 from dotenv import load_dotenv
 from datetime import datetime
 from flask_mail import Mail, Message
 import random
+from functools import wraps
 
 load_dotenv()
 
-auth_bp = Blueprint("auth", __name__)
 
+auth_bp=Blueprint("auth_bp",__name__)
 
+@login_manager.user_loader
+def load_user(user_id):
+    return UserDeatails.query.get(int(user_id))
 # ---------- LOGIN ----------
 @auth_bp.route("/login", methods=["POST"])
 def login():
@@ -100,12 +104,8 @@ def signup():
         current_app.logger.error(f"Signup failed: {e}")
         return jsonify({"error": str(e)}), 500
 
-# ---------- LOGOUT ----------
-@auth_bp.route("/logout")
-@login_required
-def logout():
-    logout_user()
-    return jsonify({"message": "Logged out successfully!"})
+
+
 
 
 # ---------- SHOW USERS ----------
@@ -215,6 +215,13 @@ def update_password():
 
     return jsonify({'message': 'Password updated successfully'}), 200
 
+
+
+
+
+
+
+# --- Decorator for Role-Based Access Control (RBAC) ---
 
 
 

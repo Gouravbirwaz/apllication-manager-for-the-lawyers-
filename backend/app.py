@@ -9,7 +9,7 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost:3306/law'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = 'supersecretkey'
-    app.config['UPLOAD_FOLDER'] = 'media'
+    app.config['UPLOAD_FOLDER'] = 'uploads/'
     app.config['MAIL_SERVER'] = 'smtp.gmail.com' 
     CORS(app)
     mail.init_app(app)
@@ -18,12 +18,14 @@ def create_app():
     login_manager.init_app(app) 
     Migrate(app, db)
 
-    from routes import auth_bp,case_bp,clinte_bp,payment_bp
+    from routes import auth_bp,case_bp,clinte_bp,payment_bp,adv_bp,tasks_bp,rag_route
     app.register_blueprint(auth_bp)
     app.register_blueprint(case_bp)
     app.register_blueprint(clinte_bp)
     app.register_blueprint(payment_bp)
-
+    app.register_blueprint(adv_bp)
+    app.register_blueprint(tasks_bp)
+    app.register_blueprint(rag_route)
 
     return app
 

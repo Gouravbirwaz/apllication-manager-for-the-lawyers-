@@ -1,0 +1,50 @@
+services:
+  frontend:
+    container_name: frontend
+    build : ./frontend
+    restart : always
+    ports:
+     - "9002:3000"
+    networks:
+      - live_conncection
+    depends_on:
+      - backend
+    env_file:
+      - ./frontend/.env.local
+  backend:
+    container_name: backend
+    build: ./backend
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - live_conncection
+    depends_on: 
+       - database
+    env_file:
+       - ./backend/.env
+
+  database:
+    container_name: database
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    networks:
+      - live_conncection
+    restart: always
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: law
+    
+    volumes:
+      -  C:\Users\Acer\Desktop\database volume volume:/var/lib/mysql
+  
+
+    
+
+networks:
+ live_conncection:
+   driver: bridge
+    
+    
