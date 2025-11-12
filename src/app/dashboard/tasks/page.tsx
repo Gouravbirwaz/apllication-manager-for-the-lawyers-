@@ -34,8 +34,10 @@ export default function TasksPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    // Don't set loading to true on refetch, to avoid flicker
-    // setIsLoading(true); 
+    // Set loading to true only on initial load
+    if (tasks.length === 0) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const [tasksRes, casesRes, usersRes] = await Promise.all([
@@ -79,7 +81,7 @@ export default function TasksPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [tasks.length]);
 
   useEffect(() => {
     fetchData();

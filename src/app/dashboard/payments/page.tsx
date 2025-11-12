@@ -33,6 +33,7 @@ export default function PaymentsPage() {
 
   const fetchPayments = useCallback(async () => {
       setError(null);
+      setIsLoading(true);
       try {
         const [paymentsResponse, usersResponse, casesResponse] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
