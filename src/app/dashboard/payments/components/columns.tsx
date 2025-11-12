@@ -186,7 +186,7 @@ export const getColumns = (
     header: "Case",
     cell: ({ row }) => {
       const caseId = row.original.case_id;
-      const caseItem = cases.find(c => String(c.id) === String(caseId));
+      const caseItem = cases.find(c => c.id === caseId);
       return <div>{caseItem?.case_title || 'N/A'}</div>;
     },
   },

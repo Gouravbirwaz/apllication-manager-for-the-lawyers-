@@ -105,7 +105,7 @@ export interface AdvocatePayment {
   billable_hours: number;
   total: number; // Corresponds to `amount` from backend
   status: 'pending' | 'paid';
-  case_id?: number; // Added to link payment to a specific case/client
+  case_id: number; // Link to the specific case
   client_id?: number;
   advocate?: User;
 }
