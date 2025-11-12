@@ -52,7 +52,8 @@ export default function PaymentsPage() {
 
         const transformedCases: Case[] = rawCasesData.map(c => ({
           ...c,
-          case_id: c.id.toString(),
+          id: c.id, // Ensure numeric ID is preserved
+          case_id: String(c.id), // Keep for compatibility if needed elsewhere
           title: c.case_title,
           next_hearing: c.next_hearing ? new Date(c.next_hearing) : undefined,
           filing_date: new Date(c.created_at),
