@@ -295,6 +295,30 @@ export async function sendInvoiceAction(invoiceId: number): Promise<{ success: b
     }
 }
 
+export async function createRazorpayOrderAction({ amount }: { amount: number }): Promise<{ order?: any } | { error: string }> {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/create-razorpay-order`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true',
+            },
+            body: JSON.stringify({ amount: Math.round(amount * 100) }), // Amount in paise
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to create Razorpay order.");
+        }
+
+        const order = await response.json();
+        return { order };
+    } catch (e: any) {
+        console.error("Razorpay order creation failed:", e);
+        return { error: e.message || "An unexpected error occurred." };
+    }
+}
+
 // Task CRUD Actions
 export async function createTaskAction(taskData: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<{ task: Task } | { error: string }> {
     try {
