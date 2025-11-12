@@ -58,6 +58,7 @@ function PaymentProcessing() {
                     .filter(p => paymentIds.includes(String(p.id)))
                     .map(p => {
                         const advocate = usersMap.get(p.advocate_id);
+                        // The backend sends the case ID as `p.case`. We use this ID to look up the full case object from casesMap.
                         const caseForPayment = p.case ? casesMap.get(p.case) : undefined;
                         
                         return {
