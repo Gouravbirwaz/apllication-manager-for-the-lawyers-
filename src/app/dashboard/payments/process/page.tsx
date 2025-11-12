@@ -82,7 +82,7 @@ function PaymentProcessing() {
                     if (filteredPayments.length === 1) {
                         const advocate = filteredPayments[0].advocate;
                         if(advocate?.gpay_details) {
-                            const url = `upi://pay?pa=${advocate.gpay_details}&pn=${encodeURIComponent(advocate.name)}&am=${totalAmount}&cu=INR&tn=Nyayadeep_Payment_For_${advocate.name}`;
+                            const url = `https://gpay.app.goo.gl/pay?pa=${advocate.gpay_details}&pn=${encodeURIComponent(advocate.name)}&am=${totalAmount}&cu=INR&tn=Nyayadeep_Payment_For_${advocate.name}`;
                             setGpayUrl(url);
                         } else {
                             setError(`Advocate ${advocate?.name} does not have a GPay UPI ID configured.`);
