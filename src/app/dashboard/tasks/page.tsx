@@ -39,7 +39,7 @@ export default function TasksPage() {
     try {
       const [tasksRes, casesRes, usersRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tasks`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
-        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/cases/with-clients`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/cases`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
         fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
       ]);
 
@@ -48,14 +48,22 @@ export default function TasksPage() {
       if (!usersRes.ok) throw new Error('Failed to fetch users');
       
       const tasksData: Task[] = await tasksRes.json();
-      const casesData: Case[] = await casesRes.json();
+      const casesData: any[] = await casesRes.json();
       const usersData: User[] = await usersRes.json();
 
-      setCases(casesData.map(c => ({...c, case_id: String(c.id), title: c.case_title, filing_date: new Date(c.created_at) })));
+      const usersMap = new Map(usersData.map(u => [u.id, u]));
+      const transformedCases: Case[] = casesData.map(c => ({
+        ...c,
+        case_id: String(c.id),
+        title: c.case_title,
+        filing_date: new Date(c.created_at),
+        client: usersMap.get(c.client_id)
+      }));
+
+      setCases(transformedCases);
       setUsers(usersData);
       
-      const usersMap = new Map(usersData.map(u => [u.id, u]));
-      const casesMap = new Map(casesData.map(c => [c.id, c]));
+      const casesMap = new Map(transformedCases.map(c => [c.id, c]));
 
       const populatedTasks = tasksData.map(task => ({
         ...task,
