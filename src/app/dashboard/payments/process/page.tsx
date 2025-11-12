@@ -49,7 +49,7 @@ function PaymentProcessing() {
 
                 const allPayments: any[] = await paymentsResponse.json();
                 const allUsers: Advocate[] = await usersResponse.json();
-                const allCases: Case[] = await casesResponse.json();
+                const allCases: any[] = await casesResponse.json();
                 
                 const usersMap = new Map(allUsers.map(u => [u.id, u]));
                 const casesMap = new Map(allCases.map(c => [c.id, c]));
