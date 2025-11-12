@@ -38,8 +38,8 @@ export default function TasksPage() {
     setError(null);
     try {
       const [tasksRes, casesRes, usersRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
-        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/with-clients`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tasks`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/cases/with-clients`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
         fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
       ]);
 
