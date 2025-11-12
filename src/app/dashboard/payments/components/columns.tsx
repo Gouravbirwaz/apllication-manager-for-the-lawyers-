@@ -186,6 +186,7 @@ export const getColumns = (
     header: "Case",
     cell: ({ row }) => {
       const caseId = row.original.case_id;
+      // Ensure we are comparing numbers with numbers
       const caseItem = cases.find(c => c.id === caseId);
       return <div>{caseItem?.case_title || 'N/A'}</div>;
     },

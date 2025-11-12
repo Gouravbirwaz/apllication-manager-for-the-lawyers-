@@ -37,7 +37,7 @@ export interface Case {
   next_hearing?: Date;
   created_at: string;
   updated_at: string;
-  client: User;
+  client?: User;
   lawyer_id?: number;
   // Fields for component compatibility
   case_id: string; // for compatibility with existing components
@@ -46,6 +46,7 @@ export interface Case {
   description?: string;
   lawyer?: User; // This will be populated manually after fetching
   advocate_id?: number;
+  client_id?: number;
 }
 
 export interface Document {
@@ -101,7 +102,7 @@ export interface AdvocatePayment {
   advocate_id: string;
   name: string; // Denormalized from User
   email: string; // Denormalized from User
-  cases: number;
+  cases: number; // This is the case_id from the backend
   billable_hours: number;
   total: number; // Corresponds to `amount` from backend
   status: 'pending' | 'paid';
