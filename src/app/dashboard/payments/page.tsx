@@ -33,12 +33,11 @@ export default function PaymentsPage() {
 
   const fetchPayments = useCallback(async () => {
       setError(null);
-      // Don't set loading to true here to avoid skeleton on re-fetch for updates
       try {
         const [paymentsResponse, usersResponse, casesResponse] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/payments`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get/all_users`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/cases`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
         ]);
 
         if (!paymentsResponse.ok) throw new Error(`Failed to fetch payments. Status: ${paymentsResponse.status}`);
@@ -86,14 +85,10 @@ export default function PaymentsPage() {
     }, []);
     
   useEffect(() => {
-    if (isUserLoading) {
-        return; // Wait until user data is loaded
-    }
-    if (user?.role === 'main') {
+    if (!isUserLoading && user?.role === 'main') {
       fetchPayments();
-    } else {
-        // If user is not main, we are not loading anything.
-        setIsLoading(false);
+    } else if (!isUserLoading) {
+      setIsLoading(false);
     }
   }, [user, isUserLoading, fetchPayments]);
 
