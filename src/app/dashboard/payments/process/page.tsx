@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, CreditCard, Loader2, User, Users, ExternalLink } from 'lucide-react';
-import type { AdvocatePayment, User as Advocate } from '@/lib/types';
+import type { AdvocatePayment, User as Advocate, Case } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { updatePaymentStatusAction, createInvoiceAction, sendInvoiceAction } from '@/app/actions';
@@ -49,7 +49,7 @@ function PaymentProcessing() {
 
                 const allPayments: any[] = await paymentsResponse.json();
                 const allUsers: Advocate[] = await usersResponse.json();
-                const allCases: any[] = await casesResponse.json();
+                const allCases: Case[] = await casesResponse.json();
                 
                 const usersMap = new Map(allUsers.map(u => [u.id, u]));
                 const casesMap = new Map(allCases.map(c => [c.id, c]));
@@ -257,5 +257,3 @@ export default function ProcessPaymentPage() {
     </div>
   );
 }
-
-    
