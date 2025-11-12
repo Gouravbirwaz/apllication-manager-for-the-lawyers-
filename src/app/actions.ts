@@ -18,8 +18,21 @@ export async function analyzeLegalDocumentAction(input: LegalDocumentAnalysisInp
 
 export async function askLegalAssistantAction(input: LegalAssistantInput): Promise<{ answer: string } | { error: string }> {
   try {
-    const output = await askLegalAssistantFlow(input);
-    return { answer: output.answer };
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/query`;
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify({ question: input.question }),
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+        throw new Error(result.error || "Failed to get answer from assistant.");
+    }
+    return { answer: result.answer };
   } catch (e: any) {
     console.error(e);
     return { error: e.message || "Failed to get answer from assistant." };
