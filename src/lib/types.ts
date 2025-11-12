@@ -63,19 +63,26 @@ export interface Hearing {
   case_title?: string; // Denormalized for easier display
 }
 
-export type TaskStatus = "pending" | "in-progress" | "done";
+export type TaskStatus = "Pending" | "In Progress" | "Done" | "Cancelled";
+export type TaskPriority = "Low" | "Medium" | "High" | "Urgent";
+
 
 export interface Task {
-  task_id: string;
-  assigned_to: string; // Reference to users.uid
-  case_id: string; // Reference to cases.case_id
+  id: number;
+  case_id: number;
+  assigned_to_id: number;
   title: string;
-  description: string;
+  description?: string;
+  due_date: string;
   status: TaskStatus;
-  due_date: Date;
-  created_at: Date;
-  case_title?: string; // Denormalized for easier display
+  priority: TaskPriority;
+  created_at: string;
+  updated_at: string;
+  // For frontend use
+  assignee?: User;
+  case?: Case;
 }
+
 
 export interface Notification {
   notif_id: string;

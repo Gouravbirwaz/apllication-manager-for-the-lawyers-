@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -8,61 +9,102 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { mockCases, mockTasks, mockUsers } from "@/lib/mock-data";
+import { PlusCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddTaskDialog } from '@/components/tasks/add-task-dialog';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
-import type { Task } from '@/lib/types';
+import type { Task, Case, User } from '@/lib/types';
+import { DataTable } from './components/data-table';
+import { getColumns } from './components/columns';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
+const Table = ({className, ...props}: React.HTMLAttributes<HTMLTableElement>) => <table className={className} {...props} />
+const TableHeader = ({className, ...props}: React.HTMLAttributes<HTMLTableSectionElement>) => <thead className={className} {...props} />
+const TableBody = ({className, ...props}: React.HTMLAttributes<HTMLTableSectionElement>) => <tbody className={className} {...props} />
+const TableRow = ({className, ...props}: React.HTMLAttributes<HTMLTableRowElement>) => <tr className={className} {...props} />
+const TableHead = ({className, ...props}: React.HTMLAttributes<HTMLTableCellElement>) => <th className={className} {...props} />
+const TableCell = ({className, ...props}: React.HTMLAttributes<HTMLTableCellElement>) => <td className={className} {...props} />
 
 export default function TasksPage() {
-  const [isClient, setIsClient] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [cases, setCases] = useState<Case[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const fetchData = async () => {
+    // Don't set loading to true on refetch
+    setError(null);
+    try {
+      const [tasksRes, casesRes, usersRes] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/with-clients`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
+      ]);
 
-  const handleTaskAdded = (newTask: Task) => {
-    setTasks(prev => [...prev, newTask].sort((a,b) => a.due_date.getTime() - b.due_date.getTime()));
+      if (!tasksRes.ok) throw new Error('Failed to fetch tasks');
+      if (!casesRes.ok) throw new Error('Failed to fetch cases');
+      if (!usersRes.ok) throw new Error('Failed to fetch users');
+      
+      const tasksData: Task[] = await tasksRes.json();
+      const casesData: Case[] = await casesRes.json();
+      const usersData: User[] = await usersRes.json();
+
+      setCases(casesData.map(c => ({...c, case_id: String(c.id), title: c.case_title, filing_date: new Date(c.created_at) })));
+      setUsers(usersData);
+      
+      const usersMap = new Map(usersData.map(u => [u.id, u]));
+      const casesMap = new Map(casesData.map(c => [c.id, c]));
+
+      const populatedTasks = tasksData.map(task => ({
+        ...task,
+        assignee: usersMap.get(task.assigned_to_id),
+        case: casesMap.get(task.case_id),
+      }));
+
+      setTasks(populatedTasks);
+
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  if (!isClient) {
+  useEffect(() => {
+    fetchData();
+  }, []);
+  
+  const handleTaskAction = () => {
+    fetchData();
+  }
+
+  const columns = useMemo(() => getColumns(handleTaskAction, users, cases), [users, cases]);
+
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>
-          <Skeleton className="h-8 w-24 mb-2" />
-          <Skeleton className="h-4 w-48" />
+          <div className="flex justify-between items-start">
+            <div>
+              <Skeleton className="h-8 w-24 mb-2" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+            <Skeleton className="h-9 w-28" />
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Status</TableHead>
-                <TableHead>Task</TableHead>
-                <TableHead>Case</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Assigned To</TableHead>
+                {[...Array(6)].map((_, i) => <TableHead key={i}><Skeleton className="h-5 w-24" /></TableHead>)}
               </TableRow>
             </TableHeader>
             <TableBody>
               {[...Array(5)].map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    {[...Array(6)].map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>)}
                   </TableRow>
               ))}
             </TableBody>
@@ -76,52 +118,28 @@ export default function TasksPage() {
     <Card>
       <CardHeader className="flex flex-row justify-between items-center">
         <div>
-            <CardTitle className="font-headline text-2xl">My Tasks</CardTitle>
+            <CardTitle className="font-headline text-2xl">All Tasks</CardTitle>
             <CardDescription>
-            A list of all tasks assigned to you.
+            A list of all tasks across all cases.
             </CardDescription>
         </div>
-        <AddTaskDialog cases={mockCases} onTaskAdded={handleTaskAdded}>
-             <Button size="sm">
-                <PlusCircle className="mr-2 h-4 w-4"/>
+        <AddTaskDialog cases={cases} onTaskAdded={handleTaskAction} allUsers={users}>
+             <Button size="sm" className="gap-1">
+                <PlusCircle className="h-3.5 w-3.5" />
                 Add Task
             </Button>
         </AddTaskDialog>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Status</TableHead>
-              <TableHead>Task</TableHead>
-              <TableHead>Case</TableHead>
-              <TableHead>Due Date</TableHead>
-              <TableHead>Assigned To</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tasks.map((task) => {
-              const assignee = mockUsers.find(
-                (user) => user.uid === task.assigned_to
-              );
-              let statusVariant: "default" | "secondary" | "outline" = "default";
-              if (task.status === "in-progress") statusVariant = "secondary";
-              if (task.status === "done") statusVariant = "outline";
-
-              return (
-                <TableRow key={task.task_id}>
-                  <TableCell>
-                    <Badge variant={statusVariant} className="capitalize">{task.status}</Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">{task.title}</TableCell>
-                  <TableCell className="text-muted-foreground">{task.case_title}</TableCell>
-                  <TableCell>{task.due_date.toLocaleDateString()}</TableCell>
-                  <TableCell>{assignee?.full_name}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        {error ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : (
+          <DataTable columns={columns} data={tasks} onTaskAction={handleTaskAction} allUsers={users} allCases={cases} />
+        )}
       </CardContent>
     </Card>
   );

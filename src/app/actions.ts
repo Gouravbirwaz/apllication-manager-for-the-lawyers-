@@ -3,7 +3,8 @@
 
 import { analyzeLegalDocument as analyzeLegalDocumentFlow, LegalDocumentAnalysisInput, LegalDocumentAnalysisOutput } from "@/ai/flows/intelligent-document-summary";
 import { askLegalAssistant as askLegalAssistantFlow, LegalAssistantInput } from "@/ai/flows/legal-assistant-flow";
-import type { Case, AdvocatePayment, Invoice } from "@/lib/types";
+import type { Case, AdvocatePayment, Invoice, Task } from "@/lib/types";
+import { format } from "date-fns";
 
 export async function analyzeLegalDocumentAction(input: LegalDocumentAnalysisInput): Promise<{ analysis: LegalDocumentAnalysisOutput } | { error: string }> {
   try {
@@ -278,5 +279,74 @@ export async function sendInvoiceAction(invoiceId: number): Promise<{ success: b
     } catch (e: any) {
         console.error(e);
         return { error: e.message || 'Could not send invoice.' };
+    }
+}
+
+// Task CRUD Actions
+export async function createTaskAction(taskData: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<{ task: Task } | { error: string }> {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true',
+            },
+            body: JSON.stringify({
+              ...taskData,
+              due_date: format(new Date(taskData.due_date), 'yyyy-MM-dd'),
+            }),
+        });
+        if (!response.ok) {
+            const result = await response.json();
+            throw new Error(result.message || 'Failed to create task.');
+        }
+        const task = await response.json();
+        return { task };
+    } catch (e: any) {
+        return { error: e.message || 'Could not create task.' };
+    }
+}
+
+export async function updateTaskAction(taskId: number, taskData: Partial<Omit<Task, 'id' | 'created_at' | 'updated_at'>>): Promise<{ task: Task } | { error: string }> {
+    try {
+        const body = { ...taskData };
+        if (body.due_date) {
+            body.due_date = format(new Date(body.due_date), 'yyyy-MM-dd');
+        }
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks/${taskId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true',
+            },
+            body: JSON.stringify(body),
+        });
+        if (!response.ok) {
+            const result = await response.json();
+            throw new Error(result.message || 'Failed to update task.');
+        }
+        const task = await response.json();
+        return { task };
+    } catch (e: any) {
+        return { error: e.message || 'Could not update task.' };
+    }
+}
+
+export async function deleteTaskAction(taskId: number): Promise<{ success: boolean } | { error: string }> {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks/${taskId}`, {
+            method: 'DELETE',
+            headers: {
+                'ngrok-skip-browser-warning': 'true',
+            },
+        });
+        if (response.status !== 204) {
+            const result = await response.json();
+            throw new Error(result.message || 'Failed to delete task.');
+        }
+        return { success: true };
+    } catch (e: any) {
+        return { error: e.message || 'Could not delete task.' };
     }
 }

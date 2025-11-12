@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,30 +28,44 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
-import { createTaskAction } from '@/app/actions';
+import { updateTaskAction } from '@/app/actions';
 
-interface AddTaskDialogProps {
-  children: React.ReactNode;
-  cases: Case[];
+interface EditTaskDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  task: Task;
+  onTaskUpdated: () => void;
   allUsers: User[];
-  onTaskAdded: (task: Task) => void;
-  defaultCaseId?: string;
+  cases: Case[];
 }
 
-export function AddTaskDialog({ children, cases, allUsers, onTaskAdded, defaultCaseId }: AddTaskDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function EditTaskDialog({ isOpen, onOpenChange, task, onTaskUpdated, allUsers, cases }: EditTaskDialogProps) {
   const [isSaving, setIsSaving] = useState(false);
   
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedCaseId, setSelectedCaseId] = useState<string | undefined>(defaultCaseId);
-  const [assignedToId, setAssignedToId] = useState<string | undefined>();
-  const [dueDate, setDueDate] = useState<Date | undefined>();
-  const [priority, setPriority] = useState<TaskPriority>('Medium');
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description || '');
+  const [selectedCaseId, setSelectedCaseId] = useState<string>(String(task.case_id));
+  const [assignedToId, setAssignedToId] = useState<string>(String(task.assigned_to_id));
+  const [dueDate, setDueDate] = useState<Date>(new Date(task.due_date));
+  const [priority, setPriority] = useState<TaskPriority>(task.priority);
+  const [status, setStatus] = useState<TaskStatus>(task.status);
   
   const { toast } = useToast();
 
-  const handleAddTask = async () => {
+  useEffect(() => {
+    if (isOpen) {
+        setTitle(task.title);
+        setDescription(task.description || '');
+        setSelectedCaseId(String(task.case_id));
+        setAssignedToId(String(task.assigned_to_id));
+        setDueDate(new Date(task.due_date));
+        setPriority(task.priority);
+        setStatus(task.status);
+    }
+  }, [task, isOpen]);
+
+
+  const handleUpdateTask = async () => {
     if (!title || !selectedCaseId || !assignedToId || !dueDate) {
       toast({
         title: "Missing Information",
@@ -63,64 +76,47 @@ export function AddTaskDialog({ children, cases, allUsers, onTaskAdded, defaultC
     }
 
     setIsSaving(true);
-    const result = await createTaskAction({
+    const result = await updateTaskAction(task.id, {
       title,
       description,
       case_id: Number(selectedCaseId),
       assigned_to_id: Number(assignedToId),
       due_date: format(dueDate, 'yyyy-MM-dd'),
       priority,
-      status: 'Pending',
+      status,
     });
 
     setIsSaving(false);
     
     if (result.error) {
        toast({
-        title: "Error Creating Task",
+        title: "Error Updating Task",
         description: result.error,
         variant: "destructive",
       });
     } else if (result.task) {
-        onTaskAdded(result.task);
+        onTaskUpdated();
         toast({
-            title: "Task Added",
-            description: `"${title}" has been successfully created.`,
+            title: "Task Updated",
+            description: `"${title}" has been successfully updated.`,
         });
-        setIsOpen(false);
-        resetForm();
+        onOpenChange(false);
     }
   };
   
-  const resetForm = () => {
-      setTitle('');
-      setDescription('');
-      setAssignedToId(undefined);
-      setDueDate(undefined);
-      setPriority('Medium');
-      if (!defaultCaseId) {
-          setSelectedCaseId(undefined);
-      }
-  }
-
-
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      setIsOpen(open);
-      if (!open) resetForm();
-    }}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>Add New Task</DialogTitle>
+          <DialogTitle>Edit Task</DialogTitle>
           <DialogDescription>
-            Assign a new task to a team member for a specific case.
+            Update the details for this task.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="case" className="text-right">Case</Label>
-            <Select onValueChange={setSelectedCaseId} value={selectedCaseId} disabled={!!defaultCaseId}>
+            <Select onValueChange={setSelectedCaseId} value={selectedCaseId}>
                 <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select a case" />
                 </SelectTrigger>
@@ -134,12 +130,12 @@ export function AddTaskDialog({ children, cases, allUsers, onTaskAdded, defaultC
 
            <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="title" className="text-right">Title</Label>
-            <Input id="title" value={title} onChange={e => setTitle(e.target.value)} className="col-span-3" placeholder="e.g., Draft witness statements" />
+            <Input id="title" value={title} onChange={e => setTitle(e.target.value)} className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="description" className="text-right pt-2">Description</Label>
-            <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} className="col-span-3" placeholder="Provide a brief description of the task." />
+            <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
@@ -177,7 +173,7 @@ export function AddTaskDialog({ children, cases, allUsers, onTaskAdded, defaultC
                 <Calendar
                   mode="single"
                   selected={dueDate}
-                  onSelect={setDueDate}
+                  onSelect={(d) => d && setDueDate(d)}
                   initialFocus
                 />
               </PopoverContent>
@@ -199,10 +195,26 @@ export function AddTaskDialog({ children, cases, allUsers, onTaskAdded, defaultC
             </Select>
           </div>
 
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="status" className="text-right">Status</Label>
+            <Select onValueChange={(v: TaskStatus) => setStatus(v)} value={status}>
+                <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Done">Done</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                </SelectContent>
+            </Select>
+          </div>
+
         </div>
         <DialogFooter>
-          <Button onClick={handleAddTask} disabled={isSaving}>
-            {isSaving ? "Adding Task..." : "Add Task"}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleUpdateTask} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -20,7 +20,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockHearings, mockTasks } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FilePlus2, Upload, CalendarPlus, Wand2, Video, FileText, Trash2, BookText } from "lucide-react";
@@ -50,6 +49,7 @@ import {
 import { AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser } from "@/contexts/UserContext";
+import { mockHearings } from "@/lib/mock-data";
 
 
 function CaseDetailSkeleton() {
@@ -101,15 +101,19 @@ export default function CaseDetailPage() {
   const [extractedText, setExtractedText] = useState<string | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
 
-  const fetchCaseAndDocuments = async () => {
+  const fetchCaseAndRelatedData = async () => {
+    if (!id) return;
     setIsLoading(true);
     setError(null);
     try {
-        const [caseResponse, docsResponse] = await Promise.all([
+        const [caseResponse, docsResponse, tasksResponse] = await Promise.all([
             fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/${id}`, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
             }),
              fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/case/${id}/documents`, {
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+            }),
+            fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks`, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
             })
         ]);
@@ -121,9 +125,11 @@ export default function CaseDetailPage() {
         if (!caseResponse.ok) throw new Error(`Failed to fetch case details. Status: ${caseResponse.status}`);
         
         if (!docsResponse.ok) console.error('Failed to fetch documents');
+        if (!tasksResponse.ok) console.error('Failed to fetch tasks');
 
         const caseJson = await caseResponse.json();
         const docsJson = await docsResponse.json();
+        const allTasks: Task[] = tasksResponse.ok ? await tasksResponse.json() : [];
         
         const transformedCase: Case = {
             ...caseJson,
@@ -138,9 +144,12 @@ export default function CaseDetailPage() {
             setCaseDocs(docsJson.documents);
         }
 
+        const filteredTasks = allTasks.filter(t => t.case_id === transformedCase.id);
+        setCaseTasks(filteredTasks);
+
         // TODO: Replace with real endpoints when available
         setCaseHearings(mockHearings.filter(h => h.case_id === transformedCase.case_id));
-        setCaseTasks(mockTasks.filter(t => t.case_id === transformedCase.case_id));
+
 
     } catch (err: any) {
         setError(err.message || 'An unexpected error occurred.');
@@ -150,8 +159,7 @@ export default function CaseDetailPage() {
   };
   
   useEffect(() => {
-    if (!id) return;
-    fetchCaseAndDocuments();
+    fetchCaseAndRelatedData();
   }, [id]);
 
   useEffect(() => {
@@ -159,13 +167,13 @@ export default function CaseDetailPage() {
     const fetchUsers = async () => {
         if (user) {
             try {
-                const usersResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
+                const usersResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
                     credentials: 'include', // Send cookies with the request
                     headers: { 'ngrok-skip-browser-warning': 'true' }
                 });
                 if (usersResponse.ok) {
                     const usersJson = await usersResponse.json();
-                    setAllUsers(usersJson.users || []);
+                    setAllUsers(usersJson || []);
                 } else {
                     console.error('Failed to fetch users');
                 }
@@ -184,6 +192,10 @@ export default function CaseDetailPage() {
         setCaseData(currentCaseData => 
             currentCaseData ? { ...currentCaseData, lawyer } : null
         );
+        setCaseTasks(currentTasks => currentTasks.map(task => ({
+          ...task,
+          assignee: allUsers.find(u => u.id === task.assigned_to_id)
+        })));
     }
   }, [caseData?.id, allUsers]); // Reruns if caseData changes or users are loaded.
 
@@ -194,13 +206,12 @@ export default function CaseDetailPage() {
 
   const handleDocumentUploaded = () => {
     // Re-fetch to get the latest list from the server
-    fetchCaseAndDocuments();
+    fetchCaseAndRelatedData();
   };
   
-  const handleTaskAdded = (newTask: Task) => {
-    if(newTask.case_id === id) {
-        setCaseTasks(prev => [...prev, newTask].sort((a, b) => a.due_date.getTime() - b.due_date.getTime()));
-    }
+  const handleTaskAction = () => {
+    // Refetch all data to ensure tasks list is up to date
+    fetchCaseAndRelatedData();
   }
 
   useEffect(() => {
@@ -614,7 +625,7 @@ export default function CaseDetailPage() {
           <Card>
               <CardHeader className="flex flex-row justify-between items-center">
                 <CardTitle className="font-headline">Associated Tasks</CardTitle>
-                <AddTaskDialog cases={[caseData]} defaultCaseId={caseData.case_id} onTaskAdded={handleTaskAdded}>
+                <AddTaskDialog cases={[caseData]} defaultCaseId={String(caseData.id)} onTaskAdded={handleTaskAction} allUsers={allUsers}>
                     <Button size="sm"><FilePlus2 className="mr-2 h-4 w-4"/> Add Task</Button>
                 </AddTaskDialog>
               </CardHeader>
@@ -630,14 +641,13 @@ export default function CaseDetailPage() {
                   </TableHeader>
                   <TableBody>
                     {caseTasks.map(task => {
-                      const assignee = allUsers.find(u => u.uid === task.assigned_to);
                       return (
-                       <TableRow key={task.task_id}>
+                       <TableRow key={task.id}>
                         <TableCell>{task.title}</TableCell>
-                        <TableCell>{assignee?.full_name}</TableCell>
-                        <TableCell>{task.due_date.toLocaleDateString()}</TableCell>
+                        <TableCell>{task.assignee?.name || 'N/A'}</TableCell>
+                        <TableCell>{new Date(task.due_date).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          <Badge variant={task.status === 'done' ? 'outline' : 'default'} className="capitalize">{task.status}</Badge>
+                          <Badge variant={task.status === 'Done' ? 'outline' : 'default'} className="capitalize">{task.status}</Badge>
                         </TableCell>
                       </TableRow>
                     )})}
