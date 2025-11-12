@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 # Stage 2: Runtime
 FROM python:3.12-slim
 WORKDIR /app
-
+RUN pip install --no-cache-dir --default-timeout=1000 faiss-cpu==1.8.0
 # Copy installed Python dependencies from builder
 COPY --from=builder /install /usr/local
 

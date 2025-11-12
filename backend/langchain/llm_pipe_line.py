@@ -5,13 +5,14 @@ import google.generativeai as genai
 from PyPDF2 import PdfReader
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
-load_dotenv()
+
+
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 # === CONFIG ===
 TRAIN_DOC_DEV_PATH = r"C:\Users\Acer\Downloads\HOD_ASSIGNMENT\apllication-manager-for-the-lawyers-\backend\documents\train_docs"
 VECTOR_DB_PATH = "faiss_index.bin"
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
-# === SETUP GEMINI ===
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # === EMBEDDING MODEL ===

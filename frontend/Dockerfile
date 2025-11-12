@@ -31,7 +31,7 @@ WORKDIR /app
 
 # Copy only the build output and necessary files from the builder
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
+
 COPY --from=builder /app/package*.json ./
 
 # Install only production dependencies
