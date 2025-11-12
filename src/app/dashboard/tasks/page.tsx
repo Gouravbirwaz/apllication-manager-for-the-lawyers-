@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -33,8 +33,9 @@ export default function TasksPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    // Don't set loading to true on refetch
+  const fetchData = useCallback(async () => {
+    // Don't set loading to true on refetch, to avoid flicker
+    // setIsLoading(true); 
     setError(null);
     try {
       const [tasksRes, casesRes, usersRes] = await Promise.all([
@@ -78,17 +79,17 @@ export default function TasksPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
   
   const handleTaskAction = () => {
     fetchData();
   }
 
-  const columns = useMemo(() => getColumns(handleTaskAction, users, cases), [users, cases]);
+  const columns = useMemo(() => getColumns(handleTaskAction, users, cases), [users, cases, handleTaskAction]);
 
   if (isLoading) {
     return (
