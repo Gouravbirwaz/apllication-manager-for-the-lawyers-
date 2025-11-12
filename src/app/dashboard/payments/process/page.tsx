@@ -39,9 +39,9 @@ function PaymentProcessing() {
             setIsLoading(true);
             try {
                 const [paymentsResponse, usersResponse, casesResponse] = await Promise.all([
-                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`),
-                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`),
-                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases`)
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/payments`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get/all_users`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/cases`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
                 ]);
 
                 if (!paymentsResponse.ok) throw new Error("Failed to fetch payments");
@@ -50,7 +50,7 @@ function PaymentProcessing() {
 
                 const allPayments: any[] = await paymentsResponse.json();
                 const allUsers: Advocate[] = await usersResponse.json();
-                const allCases: Case[] = await casesResponse.json();
+                const allCases: any[] = await casesResponse.json();
                 
                 const usersMap = new Map(allUsers.map(u => [u.id, u]));
                 const casesMap = new Map(allCases.map(c => [c.id, c]));
@@ -71,7 +71,7 @@ function PaymentProcessing() {
                             status: p.transaction_status ? 'paid' : 'pending',
                             total: p.amount || 0,
                             case_id: caseForPayment?.id,
-                            client_id: caseForPayment?.client?.id,
+                            client_id: caseForPayment?.client_id,
                             advocate: advocate,
                         } as AdvocatePayment
                     });
