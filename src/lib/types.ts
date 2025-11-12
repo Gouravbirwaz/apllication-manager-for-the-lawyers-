@@ -102,11 +102,11 @@ export interface AdvocatePayment {
   advocate_id: string;
   name: string; // Denormalized from User
   email: string; // Denormalized from User
-  cases: number; // This is the case_id from the backend
+  cases: number; // This field from backend is actually the case_id but named `cases`
   billable_hours: number;
   total: number; // Corresponds to `amount` from backend
   status: 'pending' | 'paid';
-  case_id: number; // Link to the specific case
+  case_id: number; // Correct field to hold the case ID.
   client_id?: number;
   advocate?: User;
 }

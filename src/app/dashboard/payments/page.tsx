@@ -52,8 +52,8 @@ export default function PaymentsPage() {
 
         const transformedCases: Case[] = rawCasesData.map(c => ({
           ...c,
-          id: c.id, // Ensure numeric ID is preserved
-          case_id: String(c.id), // Keep for compatibility if needed elsewhere
+          id: c.id, 
+          case_id: String(c.id), 
           title: c.case_title,
           next_hearing: c.next_hearing ? new Date(c.next_hearing) : undefined,
           filing_date: new Date(c.created_at),
@@ -65,16 +65,18 @@ export default function PaymentsPage() {
 
         const transformedPayments: AdvocatePayment[] = paymentsData.map(p => {
           const advocate = usersMap.get(p.advocate_id);
+          // The backend model sends the case ID under the key "case"
+          const caseIdFromPayment = p.case;
           return {
             id: String(p.id),
             advocate_id: String(p.advocate_id),
             name: advocate?.name || 'Unknown Advocate',
             email: advocate?.email || 'N/A',
-            cases: p.cases || 0, // This is a count, not needed for display logic
+            cases: p.cases || 0, // This seems to be a count, keeping for compatibility
             billable_hours: p.billable_hours || 0,
             status: p.transaction_status ? 'paid' : 'pending',
             total: p.amount || 0,
-            case_id: p.cases, // The backend sends 'cases' as the case_id
+            case_id: caseIdFromPayment, // Correctly map the case ID here
           };
         });
 
