@@ -6,13 +6,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, CreditCard, Loader2, User, Users, Lock, Send } from 'lucide-react';
+import { CheckCircle, CreditCard, Loader2, User, Users, Send, ExternalLink } from 'lucide-react';
 import type { AdvocatePayment, User as Advocate, Invoice, Case } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { updatePaymentStatusAction, createInvoiceAction, sendInvoiceAction } from '@/app/actions';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 
 function PaymentProcessing() {
@@ -20,12 +18,12 @@ function PaymentProcessing() {
     const router = useRouter();
     const { toast } = useToast();
     
-    const [password, setPassword] = useState('');
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [isConfirming, setIsConfirming] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
     const [paymentsToProcess, setPaymentsToProcess] = useState<AdvocatePayment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [gpayUrl, setGpayUrl] = useState<string | null>(null);
 
     const paymentIds = useMemo(() => searchParams.getAll('paymentIds'), [searchParams]);
     const amount = searchParams.get('amount');
@@ -40,16 +38,10 @@ function PaymentProcessing() {
             }
             setIsLoading(true);
             try {
-                 const [paymentsResponse, usersResponse, casesResponse] = await Promise.all([
-                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`, {
-                        headers: { 'ngrok-skip-browser-warning': 'true' }
-                    }),
-                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
-                        headers: { 'ngrok-skip-browser-warning': 'true' }
-                    }),
-                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases/with-clients`, {
-                        headers: { 'ngrok-skip-browser-warning': 'true' }
-                    })
+                const [paymentsResponse, usersResponse, casesResponse] = await Promise.all([
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`),
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`),
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases`)
                 ]);
 
                 if (!paymentsResponse.ok) throw new Error("Failed to fetch payments");
@@ -58,7 +50,7 @@ function PaymentProcessing() {
 
                 const allPayments: any[] = await paymentsResponse.json();
                 const allUsers: Advocate[] = await usersResponse.json();
-                const allCases: any[] = await casesResponse.json();
+                const allCases: Case[] = await casesResponse.json();
                 
                 const usersMap = new Map(allUsers.map(u => [u.id, u]));
                 const casesMap = new Map(allCases.map(c => [c.id, c]));
@@ -67,8 +59,8 @@ function PaymentProcessing() {
                     .filter(p => paymentIds.includes(String(p.id)))
                     .map(p => {
                         const advocate = usersMap.get(p.advocate_id);
-                        // The backend returns 'case' for the id, which is used here as 'p.case'
-                        const caseForPayment = p.case ? casesMap.get(p.case) : undefined;
+                        const caseForPayment = p.cases ? casesMap.get(p.cases) : undefined;
+                        
                         return {
                             id: String(p.id),
                             advocate_id: String(p.advocate_id),
@@ -80,10 +72,26 @@ function PaymentProcessing() {
                             total: p.amount || 0,
                             case_id: caseForPayment?.id,
                             client_id: caseForPayment?.client?.id,
+                            advocate: advocate,
                         } as AdvocatePayment
                     });
-                
-                setPaymentsToProcess(filteredPayments);
+
+                if (filteredPayments.length === 0) {
+                    setError("Could not find the specified payments.");
+                } else {
+                    if (filteredPayments.length === 1) {
+                        const advocate = filteredPayments[0].advocate;
+                        if(advocate?.gpay_details) {
+                            const url = `upi://pay?pa=${advocate.gpay_details}&pn=${encodeURIComponent(advocate.name)}&am=${totalAmount}&cu=INR&tn=Nyayadeep_Payment_For_${advocate.name}`;
+                            setGpayUrl(url);
+                        } else {
+                            setError(`Advocate ${advocate?.name} does not have a GPay UPI ID configured.`);
+                        }
+                    } else {
+                         setError("Bulk payment via GPay is not supported. Please pay one advocate at a time.");
+                    }
+                    setPaymentsToProcess(filteredPayments);
+                }
             } catch(err: any) {
                 setError(err.message || "Failed to load payment details.");
             } finally {
@@ -91,34 +99,21 @@ function PaymentProcessing() {
             }
         }
         fetchPaymentDetails();
-    }, [paymentIds]);
+    }, [paymentIds, totalAmount]);
 
 
     const handleConfirmPayment = async () => {
-        if (password !== 'Gourav@123') {
-            toast({
-                title: "Incorrect Password",
-                description: "The password you entered is incorrect. Please try again.",
-                variant: 'destructive'
-            });
-            return;
-        }
+        setIsConfirming(true);
 
-        setIsProcessing(true);
-
-        // 1. Simulate API call to a payment gateway
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // 2. Update payment status on our backend
         const updateResult = await updatePaymentStatusAction(paymentIds);
 
         if (updateResult.error) {
              toast({
-                title: "Payment Update Failed",
+                title: "Payment Confirmation Failed",
                 description: updateResult.error,
                 variant: 'destructive'
             });
-            setIsProcessing(false);
+            setIsConfirming(false);
             return;
         }
         
@@ -127,7 +122,6 @@ function PaymentProcessing() {
             description: "Payment status updated. Now generating and sending invoices...",
         });
 
-        // 3. Create and send invoices for each payment
         for (const payment of paymentsToProcess) {
             if (!payment.client_id || !payment.case_id) {
                 toast({ title: "Invoice Skipped", description: `Could not create invoice for ${payment.name} due to missing client/case ID.`, variant: 'destructive'});
@@ -154,7 +148,6 @@ function PaymentProcessing() {
                 toast({ title: 'Invoice Creation Failed', description: invoiceResult.error, variant: 'destructive' });
             } else {
                 toast({ title: 'Invoice Created', description: `Invoice ${invoiceResult.invoice.invoice_number} created.`});
-                // Send email
                 const sendResult = await sendInvoiceAction(invoiceResult.invoice.id);
                 if (sendResult.error) {
                     toast({ title: 'Email Failed', description: `Could not email invoice ${invoiceResult.invoice.invoice_number}.`, variant: 'destructive'});
@@ -164,15 +157,14 @@ function PaymentProcessing() {
             }
         }
 
-
-        setIsProcessing(false);
+        setIsConfirming(false);
         setIsComplete(true);
         setTimeout(() => router.push('/dashboard/payments'), 3000);
     };
     
     if (isLoading) {
         return (
-            <CardContent>
+            <CardContent className="flex justify-center items-center p-8">
                 <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
             </CardContent>
         )
@@ -186,6 +178,7 @@ function PaymentProcessing() {
                     <AlertTitle>Error</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
+                 <Button variant="outline" className="mt-4 w-full" onClick={() => router.back()}>Go Back</Button>
             </CardContent>
         )
     }
@@ -199,59 +192,60 @@ function PaymentProcessing() {
             </div>
         )
     }
+    
+    const advocateName = paymentsToProcess[0]?.name;
 
     return (
         <>
             <CardHeader>
-                <CardTitle className="font-headline text-2xl">Confirm Payment</CardTitle>
-                <CardDescription>Review the details and enter your password to authorize this transaction.</CardDescription>
+                <CardTitle className="font-headline text-2xl">Pay Advocate via GPay</CardTitle>
+                <CardDescription>Review the details and follow the steps to complete the payment.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Total Amount Payable</p>
+                    <p className="text-sm text-muted-foreground">Total Amount to Pay</p>
                     <p className="text-4xl font-bold">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalAmount)}</p>
                 </div>
                 
-                <div className="p-4 bg-muted/50 rounded-lg text-sm">
+                <div className="p-4 bg-muted/50 rounded-lg text-sm space-y-2">
                     <h3 className="font-semibold mb-2 flex items-center gap-2">
-                        {paymentsToProcess.length > 1 ? <Users /> : <User />}
-                        Payment Summary
+                        <User />
+                        Payment Recipient
                     </h3>
-                    <p>
-                        You are about to process a payment for{' '}
-                        <span className="font-bold">{paymentsToProcess.length}</span> advocate(s). An invoice will be generated and emailed to the respective client for each payment.
-                    </p>
-                    {paymentsToProcess.length > 0 && paymentsToProcess.length < 5 && (
-                         <div className="text-xs text-muted-foreground mt-2">
-                            <p className="font-medium">Recipients:</p>
-                            <ul className="list-disc pl-4">
-                                {paymentsToProcess.map(p => <li key={p.id}>{p.name}</li>)}
-                            </ul>
-                        </div>
-                    )}
+                    <div className="flex justify-between">
+                        <span>Advocate:</span>
+                        <span className="font-medium">{advocateName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span>UPI ID:</span>
+                        <span className="font-mono text-xs">{paymentsToProcess[0]?.advocate?.gpay_details}</span>
+                    </div>
                 </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="password">
-                        <div className="flex items-center gap-2">
-                            <Lock className="h-4 w-4" />
-                            Confirm Password
-                        </div>
-                    </Label>
-                    <Input
-                        id="password"
-                        type="password"
-                        placeholder="Enter your password to confirm"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        disabled={isProcessing}
-                    />
+                <div className="space-y-4 text-center">
+                    <p className="text-sm text-muted-foreground">
+                        <span className='font-semibold text-foreground'>Step 1:</span> Click the button below to open Google Pay and complete the transaction.
+                    </p>
+                    <Button className="w-full" size="lg" asChild>
+                        <a href={gpayUrl || '#'} target="_blank" rel="noopener noreferrer">
+                            <CreditCard className="mr-2 h-5 w-5" /> Pay <span className="font-bold mx-1">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalAmount)}</span> with GPay
+                            <ExternalLink className="ml-2 h-4 w-4"/>
+                        </a>
+                    </Button>
                 </div>
+
+                 <div className="space-y-4 text-center">
+                    <p className="text-sm text-muted-foreground">
+                       <span className='font-semibold text-foreground'>Step 2:</span> After paying, click here to confirm and record the transaction in the system.
+                    </p>
+                    <Button className="w-full" variant="outline" onClick={handleConfirmPayment} disabled={isConfirming}>
+                        {isConfirming ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Confirming...</> : <><CheckCircle className="mr-2 h-4 w-4" /> Confirm Payment Completion</>}
+                    </Button>
+                </div>
+
             </CardContent>
             <CardFooter>
-                <Button className="w-full" onClick={handleConfirmPayment} disabled={isProcessing || totalAmount === 0 || !password}>
-                    {isProcessing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</> : <><CreditCard className="mr-2 h-4 w-4" /> Confirm & Pay</>}
-                </Button>
+                 <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => router.back()}>Cancel and Go Back</Button>
             </CardFooter>
         </>
     );
@@ -269,5 +263,3 @@ export default function ProcessPaymentPage() {
     </div>
   );
 }
-
-    

@@ -16,6 +16,7 @@ export interface User {
   total_case_handled?: number;
   role?: UserRole;
   photo_url?: string;
+  gpay_details?: string; // For advocate's GPay UPI ID
   // Fields from old mock data, can be cleaned up later
   profile_pic?: string; // Covered by photo_url
   uid?: string; // Covered by id
@@ -106,6 +107,7 @@ export interface AdvocatePayment {
   status: 'pending' | 'paid';
   case_id?: number; // Added to link payment to a specific case/client
   client_id?: number;
+  advocate?: User;
 }
 
 export interface Invoice {

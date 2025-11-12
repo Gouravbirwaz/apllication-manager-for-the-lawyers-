@@ -35,15 +35,9 @@ export default function PaymentsPage() {
       // Don't set loading to true here to avoid skeleton on re-fetch
       try {
         const [paymentsResponse, usersResponse, casesResponse] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`, {
-            headers: { 'ngrok-skip-browser-warning': 'true' }
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`, {
-            headers: { 'ngrok-skip-browser-warning': 'true' }
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases`, {
-            headers: { 'ngrok-skip-browser-warning': 'true' }
-          })
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments`),
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/get/all_users`),
+          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cases`)
         ]);
 
         if (!paymentsResponse.ok) throw new Error(`Failed to fetch payments. Status: ${paymentsResponse.status}`);
@@ -78,7 +72,7 @@ export default function PaymentsPage() {
             billable_hours: p.billable_hours || 0,
             status: p.transaction_status ? 'paid' : 'pending',
             total: p.amount || 0,
-            case_id: p.case, // Use p.case as the case_id
+            case_id: p.cases,
           };
         });
 

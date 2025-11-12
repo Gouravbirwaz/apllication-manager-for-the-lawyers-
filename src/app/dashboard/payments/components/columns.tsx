@@ -41,7 +41,7 @@ const PayAction = ({ payment }: { payment: AdvocatePayment }) => {
         });
         router.push(`/dashboard/payments/process?${params.toString()}`);
     }
-    return <DropdownMenuItem onClick={handlePay} disabled={payment.status === 'paid'}>Pay Now</DropdownMenuItem>
+    return <DropdownMenuItem onClick={handlePay} disabled={payment.status === 'paid'}>Pay with GPay</DropdownMenuItem>
 }
 
 const PaymentActions = ({
